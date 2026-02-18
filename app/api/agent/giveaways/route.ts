@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
         await prisma.giveawayEntry.findMany({
           where: {
             userId: agent.userId,
-            giveawayId: { in: giveaways.map((g) => g.id) },
+            giveawayId: { in: giveaways.map((g: (typeof giveaways)[number]) => g.id) },
           },
           select: { giveawayId: true },
         })
-      ).map((e) => e.giveawayId)
+      ).map((e: { giveawayId: string }) => e.giveawayId)
     );
 
-    const result = giveaways.map((g) => ({
+    const result = giveaways.map((g: (typeof giveaways)[number]) => ({
       ...g,
       alreadyEntered: enteredIds.has(g.id),
     }));
