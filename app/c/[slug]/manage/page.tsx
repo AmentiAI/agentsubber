@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,8 @@ import {
   Globe,
   ArrowLeft,
   Download,
+  Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { formatNumber, timeUntil } from "@/lib/utils";
@@ -1076,6 +1078,27 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (
+    field: "logoUrl" | "bannerUrl",
+    file: File | null
+  ) => {
+    if (!file) return;
+    const maxMB = field === "logoUrl" ? 2 : 5;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`File too large. Max ${maxMB}MB.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setForm((prev) => ({ ...prev, [field]: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -1108,42 +1131,111 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
           <CardHeader>
             <CardTitle className="text-sm">Branding</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Logo */}
             <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Logo URL</label>
-              <Input
-                value={form.logoUrl}
-                onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                placeholder="https://..."
-              />
-              {form.logoUrl && (
-                <div className="mt-2">
-                  <img
-                    src={form.logoUrl}
-                    alt="Logo preview"
-                    className="w-20 h-20 rounded-xl object-cover border border-[rgb(40,40,55)]"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
+              <label className="text-xs text-[rgb(130,130,150)] mb-2 block font-medium">Logo</label>
+              <div className="flex items-center gap-4">
+                {/* Preview */}
+                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-[rgb(60,60,80)] bg-[rgb(16,16,22)] flex items-center justify-center overflow-hidden shrink-0">
+                  {form.logoUrl ? (
+                    <img
+                      src={form.logoUrl}
+                      alt="Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Upload className="w-6 h-6 text-[rgb(80,80,100)]" />
+                  )}
                 </div>
-              )}
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {form.logoUrl ? "Change Logo" : "Upload Logo"}
+                  </Button>
+                  {form.logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-red-400 hover:text-red-300"
+                      onClick={() => {
+                        setForm((prev) => ({ ...prev, logoUrl: "" }));
+                        if (logoInputRef.current) logoInputRef.current.value = "";
+                      }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Remove
+                    </Button>
+                  )}
+                  <p className="text-xs text-[rgb(100,100,120)]">PNG, JPG, GIF · max 2 MB</p>
+                </div>
+              </div>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFileUpload("logoUrl", e.target.files?.[0] ?? null)}
+              />
             </div>
+
+            {/* Banner */}
             <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Banner URL</label>
-              <Input
-                value={form.bannerUrl}
-                onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
-                placeholder="https://..."
-              />
+              <label className="text-xs text-[rgb(130,130,150)] mb-2 block font-medium">Banner</label>
+              <div
+                className="w-full h-28 rounded-xl border-2 border-dashed border-[rgb(60,60,80)] bg-[rgb(16,16,22)] flex items-center justify-center overflow-hidden cursor-pointer hover:border-purple-500/50 transition-colors relative group"
+                onClick={() => bannerInputRef.current?.click()}
+              >
+                {form.bannerUrl ? (
+                  <>
+                    <img
+                      src={form.bannerUrl}
+                      alt="Banner"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-white" />
+                      <span className="text-white text-sm ml-2">Change Banner</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-[rgb(80,80,100)]">
+                    <Upload className="w-7 h-7" />
+                    <span className="text-sm">Click to upload banner</span>
+                    <span className="text-xs">PNG, JPG, GIF · max 5 MB · Recommended: 1400×400</span>
+                  </div>
+                )}
+              </div>
               {form.bannerUrl && (
-                <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-[rgb(40,40,55)]">
-                  <img
-                    src={form.bannerUrl}
-                    alt="Banner preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 gap-2 text-red-400 hover:text-red-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setForm((prev) => ({ ...prev, bannerUrl: "" }));
+                    if (bannerInputRef.current) bannerInputRef.current.value = "";
+                  }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Remove Banner
+                </Button>
               )}
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFileUpload("bannerUrl", e.target.files?.[0] ?? null)}
+              />
             </div>
           </CardContent>
         </Card>
