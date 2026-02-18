@@ -35,6 +35,7 @@ declare global {
     XverseProviders?: {
       BitcoinProvider?: {
         request(method: string, params?: any): Promise<any>;
+        getAddresses?: (params?: any) => Promise<any>;
       };
     };
     LeatherProvider?: {
@@ -73,33 +74,71 @@ function detectBtcWallets() {
 // ─── BTC wallet connector ───
 async function connectBtcWallet(provider: string): Promise<{ address: string }> {
   if (provider === "unisat") {
-    const accounts = await window.unisat!.requestAccounts();
-    if (!accounts[0]) throw new Error("No account returned");
+    // Unisat: request accounts then get current accounts
+    let accounts: string[] = [];
+    try { accounts = await window.unisat!.requestAccounts(); } catch {}
+    if (!accounts.length) {
+      try { accounts = await window.unisat!.getAccounts(); } catch {}
+    }
+    if (!accounts[0]) throw new Error("Unisat returned no accounts — make sure it's unlocked");
     return { address: accounts[0] };
   }
+
   if (provider === "xverse") {
-    const resp = await window.XverseProviders!.BitcoinProvider!.request("getAccounts", {
-      purposes: ["payment", "ordinals"],
-    });
-    const addresses: any[] = resp?.result?.addresses ?? [];
-    const addr =
-      addresses.find((a: any) => a.purpose === "payment")?.address ??
-      addresses[0]?.address;
-    if (!addr) throw new Error("No address returned");
+    // Xverse v1 API: getAddresses (newer) vs getAccounts (older)
+    let addr = "";
+    try {
+      // Try newer API first (Xverse 3.x+)
+      const resp = await (window as any).XverseProviders!.BitcoinProvider!.request("getAddresses", {
+        purposes: ["payment", "ordinals"],
+      });
+      const addrs: any[] = resp?.result?.addresses ?? resp?.addresses ?? [];
+      addr = addrs.find((a: any) => a.purpose === "payment")?.address
+          ?? addrs.find((a: any) => a.addressType === "p2wpkh")?.address
+          ?? addrs[0]?.address ?? "";
+    } catch {}
+
+    if (!addr) {
+      // Fall back to older getAccounts API
+      try {
+        const resp = await (window as any).XverseProviders!.BitcoinProvider!.request("getAccounts", {
+          purposes: ["payment", "ordinals"],
+        });
+        const addrs: any[] = resp?.result?.addresses ?? resp?.addresses ?? [];
+        addr = addrs.find((a: any) => a.purpose === "payment")?.address
+            ?? addrs[0]?.address ?? "";
+      } catch {}
+    }
+
+    if (!addr) throw new Error("Xverse returned no address — make sure it's unlocked and on mainnet");
     return { address: addr };
   }
+
   if (provider === "leather") {
-    const resp = await window.LeatherProvider!.request("getAddresses");
-    const addresses: any[] = resp?.result?.addresses ?? [];
-    const addr = addresses.find((a: any) => a.type === "p2wpkh")?.address ?? addresses[0]?.address;
-    if (!addr) throw new Error("No address returned");
+    let addr = "";
+    try {
+      const resp = await window.LeatherProvider!.request("getAddresses");
+      const addrs: any[] = resp?.result?.addresses ?? [];
+      addr = addrs.find((a: any) => a.type === "p2wpkh")?.address
+          ?? addrs.find((a: any) => a.type === "p2tr")?.address
+          ?? addrs[0]?.address ?? "";
+    } catch {}
+    if (!addr) throw new Error("Leather returned no address — make sure it's unlocked");
     return { address: addr };
   }
+
   if (provider === "magiceden") {
-    const resp = await window.magicEden!.bitcoin!.connect();
-    return { address: resp.paymentAddress };
+    try {
+      const resp = await window.magicEden!.bitcoin!.connect();
+      const addr = resp.paymentAddress || resp.ordinalAddress;
+      if (!addr) throw new Error("No address");
+      return { address: addr };
+    } catch (e: any) {
+      throw new Error(`Magic Eden: ${e.message}`);
+    }
   }
-  throw new Error("Unknown provider");
+
+  throw new Error("Unknown wallet provider");
 }
 
 async function signBtcMessage(provider: string, address: string, message: string): Promise<string> {
