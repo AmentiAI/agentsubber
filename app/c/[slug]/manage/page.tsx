@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import dynamic from "next/dynamic";
+
+const ImageCropModal = dynamic(() => import("@/components/ui/ImageCropModal"), { ssr: false });
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1083,22 +1086,33 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
+  // Crop modal state
+  const [cropModal, setCropModal] = useState<{
+    src: string;
+    field: "logoUrl" | "bannerUrl";
+  } | null>(null);
+
   const handleFileUpload = (
     field: "logoUrl" | "bannerUrl",
     file: File | null
   ) => {
     if (!file) return;
-    const maxMB = field === "logoUrl" ? 2 : 5;
-    if (file.size > maxMB * 1024 * 1024) {
-      alert(`File too large. Max ${maxMB}MB.`);
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File too large. Max 10 MB.");
       return;
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setForm((prev) => ({ ...prev, [field]: dataUrl }));
+      // Open crop modal instead of saving directly
+      setCropModal({ src: e.target?.result as string, field });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = (croppedDataUrl: string) => {
+    if (!cropModal) return;
+    setForm((prev) => ({ ...prev, [cropModal.field]: croppedDataUrl }));
+    setCropModal(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1125,6 +1139,20 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
 
   return (
     <div className="max-w-2xl">
+      {/* Crop modal — rendered outside the form flow */}
+      {cropModal && (
+        <ImageCropModal
+          src={cropModal.src}
+          aspect={cropModal.field === "logoUrl" ? "square" : "banner"}
+          onDone={handleCropDone}
+          onCancel={() => {
+            setCropModal(null);
+            // Reset the file input so re-selecting the same file works
+            if (cropModal.field === "logoUrl" && logoInputRef.current) logoInputRef.current.value = "";
+            if (cropModal.field === "bannerUrl" && bannerInputRef.current) bannerInputRef.current.value = "";
+          }}
+        />
+      )}
       <h2 className="text-lg font-bold text-white mb-6">Community Settings</h2>
       <form onSubmit={handleSave} className="space-y-5">
 
