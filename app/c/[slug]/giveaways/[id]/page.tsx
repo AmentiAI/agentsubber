@@ -23,7 +23,7 @@ import Link from "next/link";
 import { timeUntil } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
-import { getPusherClient, CHANNELS, EVENTS } from "@/lib/pusher";
+// Pusher replaced with polling
 
 export default function GiveawayPage() {
   const params = useParams();
@@ -53,31 +53,23 @@ export default function GiveawayPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ─── Pusher: subscribe to live updates ───
+  // ─── Poll for live entry count + winners ───
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return;
-    let channel: ReturnType<ReturnType<typeof getPusherClient>["subscribe"]>;
-    try {
-      const pusher = getPusherClient();
-      channel = pusher.subscribe(CHANNELS.giveaway(id));
-
-      // Live entry count
-      channel.bind(EVENTS.ENTRY_COUNT, (data: { count: number }) => {
-        setGiveaway((prev: any) =>
-          prev ? { ...prev, _count: { ...prev._count, entries: data.count } } : prev
-        );
-      });
-
-      // Winners announced — reveal them with a flash
-      channel.bind(EVENTS.DRAW_COMPLETE, (data: { winners: any[] }) => {
-        setWinners(data.winners);
-        setGiveaway((prev: any) => prev ? { ...prev, status: "COMPLETED" } : prev);
-      });
-    } catch {}
-
-    return () => {
-      try { channel?.unbind_all(); channel?.unsubscribe(); } catch {}
-    };
+    if (!id) return;
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/giveaways/${id}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.giveaway) {
+          setGiveaway((prev: any) => prev ? { ...prev, _count: d.giveaway._count, status: d.giveaway.status } : prev);
+          if (d.giveaway.status === "COMPLETED" && d.giveaway.winners?.length) {
+            setWinners(d.giveaway.winners);
+          }
+        }
+      } catch {}
+    }, 10_000);
+    return () => clearInterval(poll);
   }, [id]);
 
   const isOwner = session?.user?.id === giveaway?.community?.ownerUserId;

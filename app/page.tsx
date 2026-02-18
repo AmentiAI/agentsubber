@@ -411,7 +411,7 @@ rate_limit: 100 req/min`}
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
                 <li><Link href="/discover" className="hover:text-white transition-colors">Discover</Link></li>
                 <li><Link href="/calendar" className="hover:text-white transition-colors">Mint Calendar</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/dashboard/subscription" className="hover:text-white transition-colors">Pricing</Link></li>
               </ul>
             </div>
             <div>
@@ -419,15 +419,15 @@ rate_limit: 100 req/min`}
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
                 <li><Link href="/dashboard/agent" className="hover:text-white transition-colors">Agent API</Link></li>
-                <li><Link href="/docs/agent" className="hover:text-white transition-colors">Documentation</Link></li>
+                <li><a href="https://docs.communiclaw.xyz" target="_blank" rel="noopener" className="hover:text-white transition-colors">Documentation</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-base font-semibold text-white mb-3">Support</h4>
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
-                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">Twitter/X</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
+                <li><a href="https://x.com/SigNullBTC" target="_blank" rel="noopener" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="https://x.com/ordmakerfun" target="_blank" rel="noopener" className="hover:text-white transition-colors">Twitter/X</a></li>
+                <li><a href="https://discord.gg/clawd" target="_blank" rel="noopener" className="hover:text-white transition-colors">Discord</a></li>
               </ul>
             </div>
           </div>

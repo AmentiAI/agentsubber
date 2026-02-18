@@ -11,7 +11,7 @@ import {
   Users,
   Gift,
   Shield,
-  ExternalLink,
+  TrendingUp,
   CheckCircle,
   Loader2,
 } from "lucide-react";
@@ -29,7 +29,7 @@ interface Community {
   verified: boolean;
   twitterHandle: string | null;
   memberAccess?: { gateType: string };
-  _count?: { giveaways: number };
+  _count?: { giveaways: number; followers: number };
 }
 
 const CHAIN_FILTERS = [
@@ -179,7 +179,13 @@ function CommunityCard({ community: c }: { community: Community }) {
               {c._count?.giveaways !== undefined && (
                 <div className="flex items-center gap-1">
                   <Gift className="w-4 h-4" />
-                  {c._count.giveaways}
+                  {c._count.giveaways} giveaways
+                </div>
+              )}
+              {(c._count?.followers ?? 0) > 0 && (
+                <div className="flex items-center gap-1 text-purple-400">
+                  <TrendingUp className="w-4 h-4" />
+                  {c._count!.followers} followers
                 </div>
               )}
             </div>

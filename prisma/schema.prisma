@@ -110,6 +110,7 @@ model User {
   posts            Post[]
   postComments     PostComment[]
   postLikes        PostLike[]
+  communityFollows CommunityFollow[]
 }
 
 model Account {
@@ -265,6 +266,19 @@ model Community {
   collabsSent        CollabOffer[]       @relation("CollabFrom")
   collabsReceived    CollabOffer[]       @relation("CollabTo")
   posts              Post[]              @relation("CommunityPosts")
+  followers          CommunityFollow[]
+}
+
+model CommunityFollow {
+  id          String    @id @default(cuid())
+  communityId String
+  userId      String
+  createdAt   DateTime  @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
 }
 
 model MemberAccess {

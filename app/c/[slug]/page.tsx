@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import FollowButton from "@/components/community/FollowButton";
 import { authOptions } from "@/lib/auth";
 import { getChainColor, getChainIcon, timeUntil, formatNumber } from "@/lib/utils";
 import { format } from "date-fns";
@@ -231,6 +232,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   <MessageSquare className="w-4 h-4" />Community Board
                 </Button>
               </Link>
+              <FollowButton communityId={community.id} followerCount={community._count?.followers ?? 0} />
               {isOwner && (
                 <Link href={`/c/${community.slug}/manage`}>
                   <Button variant="secondary" className="gap-2">

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           memberAccess: { select: { gateType: true } },
-          _count: { select: { giveaways: { where: { status: "ACTIVE" } } } },
+          _count: { select: { giveaways: { where: { status: "ACTIVE" } }, followers: true } },
         },
         orderBy: [{ verified: "desc" }, { memberCount: "desc" }],
         skip: (page - 1) * limit,
