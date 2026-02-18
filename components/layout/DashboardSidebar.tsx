@@ -37,23 +37,25 @@ export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 hidden lg:block">
-      <div className="sticky top-20 space-y-1">
+    <aside className="w-72 shrink-0 hidden lg:block border-r border-[rgb(25,25,38)] bg-[rgb(11,11,17)]">
+      <div className="sticky top-20 py-4 space-y-1 px-3">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "flex items-center gap-4 px-4 py-3.5 rounded-xl text-base font-medium transition-all",
                 isActive
-                  ? "bg-purple-600/20 text-purple-300 border border-purple-600/30"
-                  : "text-[rgb(130,130,150)] hover:text-white hover:bg-[rgb(30,30,40)]"
+                  ? "bg-purple-600/20 text-purple-200 border border-purple-500/25"
+                  : "text-[rgb(140,140,165)] hover:text-white hover:bg-[rgb(22,22,35)]"
               )}
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className={cn("w-5 h-5 shrink-0", isActive ? "text-purple-400" : "")} />
               {item.label}
             </Link>
           );
