@@ -39,6 +39,61 @@ export async function POST(
       return NextResponse.json({ error: "Already entered" }, { status: 409 });
     }
 
+    // Check if this is an agent request
+    const apiKey = request.headers.get("x-api-key");
+    const challengeToken = request.headers.get("x-challenge-token");
+
+    if (apiKey) {
+      // Verify the agent
+      const agent = await prisma.openClawAgent.findUnique({
+        where: { apiKey },
+      });
+      if (!agent)
+        return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+
+      // Require challenge token
+      if (!challengeToken) {
+        return NextResponse.json(
+          {
+            error:
+              "Agents must complete a knowledge challenge before entering giveaways. Call POST /api/agent/challenge to begin.",
+            challengeRequired: true,
+            challengeEndpoint: "/api/agent/challenge",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Validate challenge token
+      const challenge = await prisma.agentChallenge.findFirst({
+        where: {
+          token: challengeToken,
+          agentId: agent.id,
+          solved: true,
+          used: false,
+        },
+      });
+
+      if (!challenge) {
+        return NextResponse.json(
+          { error: "Invalid or already-used challenge token" },
+          { status: 403 }
+        );
+      }
+      if (new Date() > challenge.expiresAt) {
+        return NextResponse.json(
+          { error: "Challenge token expired. Complete a new challenge." },
+          { status: 403 }
+        );
+      }
+
+      // Mark token as used
+      await prisma.agentChallenge.update({
+        where: { id: challenge.id },
+        data: { used: true },
+      });
+    }
+
     // Get user's primary wallet
     const primaryWallet = await prisma.wallet.findFirst({
       where: { userId: session.user.id, isPrimary: true },
@@ -54,7 +109,7 @@ export async function POST(
         walletAddress: body.walletAddress ?? primaryWallet?.address,
         xUsername: body.xUsername,
         discordUsername: body.discordUsername,
-        enteredByAgent: false,
+        enteredByAgent: !!apiKey,
       },
     });
 

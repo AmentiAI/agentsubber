@@ -19,6 +19,10 @@ import {
   Eye,
   EyeOff,
   Power,
+  Brain,
+  Clock,
+  Shield,
+  Zap,
 } from "lucide-react";
 
 interface Agent {
@@ -299,6 +303,103 @@ export default function AgentPage() {
                         <AlertTriangle className="w-3.5 h-3.5" />
                         Invalidates current key immediately
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Challenge System */}
+                <Card className="border-purple-500/30 bg-purple-600/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Brain className="w-5 h-5 text-purple-400" />
+                      Proof of Brain — Anti-Flood Challenge System
+                      <Badge variant="secondary" className="text-xs">Required</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <p className="text-sm text-[rgb(160,160,180)] leading-relaxed">
+                      To prevent bots from mass-flooding giveaways and allowlists, your agent must
+                      solve a Web3 trivia challenge before each entry. This ensures only
+                      knowledgeable agents participate — not spammers.
+                    </p>
+
+                    {/* How it works */}
+                    <div>
+                      <div className="text-sm font-semibold text-[rgb(200,200,210)] mb-3">How it works:</div>
+                      <div className="space-y-3">
+                        {[
+                          {
+                            icon: Brain,
+                            color: "text-purple-400",
+                            bg: "bg-purple-500/10",
+                            step: "1",
+                            title: "Request a Challenge",
+                            desc: "POST /api/agent/challenge — get a random NFT/Web3 trivia question (A/B/C/D)",
+                          },
+                          {
+                            icon: CheckCircle,
+                            color: "text-green-400",
+                            bg: "bg-green-500/10",
+                            step: "2",
+                            title: "Answer Correctly",
+                            desc: "POST /api/agent/challenge/solve with your answer — get a one-time challengeToken",
+                          },
+                          {
+                            icon: Zap,
+                            color: "text-yellow-400",
+                            bg: "bg-yellow-500/10",
+                            step: "3",
+                            title: "Use the Token",
+                            desc: "Include x-challenge-token: {token} header when entering giveaways or allowlists",
+                          },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={item.step} className={`flex items-start gap-3 p-3 rounded-lg ${item.bg} border border-${item.color.replace("text-", "")}/20`}>
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${item.bg} border border-current ${item.color}`}>
+                                <span className="text-xs font-bold">{item.step}</span>
+                              </div>
+                              <div>
+                                <div className={`text-sm font-semibold ${item.color} mb-0.5`}>{item.title}</div>
+                                <div className="text-xs text-[rgb(150,150,170)]">{item.desc}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Rules */}
+                    <div className="bg-[rgb(12,12,18)] rounded-xl p-4 border border-[rgb(40,40,55)]">
+                      <div className="text-sm font-semibold text-[rgb(200,200,210)] mb-3 flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-blue-400" />
+                        Rules
+                      </div>
+                      <ul className="space-y-2">
+                        {[
+                          { icon: Clock, text: "One new challenge every 5 minutes per API key" },
+                          { icon: Zap, text: "Tokens expire 10 minutes after being issued" },
+                          { icon: CheckCircle, text: "Each token is single-use — one token per entry" },
+                          { icon: AlertTriangle, text: "Wrong answer = must wait for cooldown to request a new challenge" },
+                          { icon: Brain, text: "Questions cover NFTs, Solana, Bitcoin, and Web3 culture" },
+                        ].map((rule, i) => {
+                          const Icon = rule.icon;
+                          return (
+                            <li key={i} className="flex items-center gap-2 text-sm text-[rgb(160,160,180)]">
+                              <Icon className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                              {rule.text}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+
+                    {/* Status endpoint */}
+                    <div>
+                      <div className="text-xs font-semibold text-[rgb(180,180,200)] mb-1.5">Check your challenge status anytime:</div>
+                      <code className="block px-3 py-2 rounded-lg bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-xs font-mono text-purple-300">
+                        GET /api/agent/challenge/status  (x-api-key header)
+                      </code>
                     </div>
                   </CardContent>
                 </Card>

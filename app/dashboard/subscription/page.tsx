@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   CheckCircle,
   CreditCard,
@@ -17,6 +18,7 @@ import {
   Bitcoin,
   X,
   Copy,
+  Clock,
 } from "lucide-react";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -82,7 +84,7 @@ interface CryptoPayState {
   memo: string | null;
   loadingChain: "BTC" | "SOL" | null;
   verifying: boolean;
-  verifyResult: { confirmed: boolean; message?: string; txHash?: string } | null;
+  verifyResult: { confirmed: boolean; pending?: boolean; message?: string; error?: string; txHash?: string } | null;
 }
 
 function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }) {
@@ -98,6 +100,7 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
     verifyResult: null,
   });
   const [copied, setCopied] = useState(false);
+  const [txHash, setTxHash] = useState("");
 
   async function selectChain(chain: "BTC" | "SOL") {
     setState(s => ({ ...s, loadingChain: chain, verifyResult: null }));
@@ -128,28 +131,19 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
   }
 
   async function verifyPayment() {
-    if (!state.paymentId) return;
+    if (!state.paymentId || !txHash.trim()) return;
     setState(s => ({ ...s, verifying: true, verifyResult: null }));
-    // Poll up to 3 times with 5s delay
-    for (let i = 0; i < 3; i++) {
-      if (i > 0) await new Promise(r => setTimeout(r, 5000));
-      try {
-        const res = await fetch("/api/billing/verify-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: state.paymentId }),
-        });
-        const data = await res.json();
-        if (data.confirmed) {
-          setState(s => ({ ...s, verifying: false, verifyResult: data }));
-          return;
-        }
-        if (i === 2) {
-          setState(s => ({ ...s, verifying: false, verifyResult: data }));
-        }
-      } catch {}
+    try {
+      const res = await fetch("/api/billing/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: state.paymentId, txHash: txHash.trim() }),
+      });
+      const data = await res.json();
+      setState(s => ({ ...s, verifying: false, verifyResult: data }));
+    } catch {
+      setState(s => ({ ...s, verifying: false, verifyResult: { confirmed: false, error: "Network error. Please try again." } }));
     }
-    setState(s => ({ ...s, verifying: false }));
   }
 
   function copyAddr() {
@@ -208,16 +202,41 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
                   {copied ? <><CheckCircle className="w-3.5 h-3.5 mr-1 text-green-400" /> Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1" /> Copy Address</>}
                 </Button>
                 <div className="text-xs text-[rgb(130,130,150)] mt-3 text-center">
-                  ⚡ Payment auto-detects within 1-5 minutes after confirmation
+                  ⚡ Send the exact amount shown — each payment has a unique amount for tracking
                 </div>
               </div>
 
+              {/* TX Hash input */}
+              {!state.verifyResult?.confirmed && (
+                <div>
+                  <label className="block text-xs font-medium text-[rgb(200,200,210)] mb-1.5">
+                    After sending, paste your transaction hash here:
+                  </label>
+                  <Input
+                    placeholder="Paste your transaction hash/ID here..."
+                    value={txHash}
+                    onChange={(e) => setTxHash(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              )}
+
               {/* Verify result */}
               {state.verifyResult && (
-                <div className={`p-3 rounded-lg text-sm ${state.verifyResult.confirmed ? "bg-green-500/10 border border-green-500/20 text-green-300" : "bg-yellow-500/10 border border-yellow-500/20 text-yellow-300"}`}>
-                  {state.verifyResult.confirmed
-                    ? `✓ Payment confirmed! Your ${plan} plan is now active. TX: ${state.verifyResult.txHash?.slice(0, 12)}...`
-                    : state.verifyResult.message ?? "Payment not detected yet."}
+                <div className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
+                  state.verifyResult.confirmed
+                    ? "bg-green-500/10 border border-green-500/20 text-green-300"
+                    : state.verifyResult.pending
+                    ? "bg-yellow-500/10 border border-yellow-500/20 text-yellow-300"
+                    : "bg-red-500/10 border border-red-500/20 text-red-300"
+                }`}>
+                  {state.verifyResult.confirmed ? (
+                    <><CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>Payment confirmed! Your {plan} plan is now active. TX: {state.verifyResult.txHash?.slice(0, 16)}...</span></>
+                  ) : state.verifyResult.pending ? (
+                    <><Clock className="w-4 h-4 shrink-0 mt-0.5" /><span>{state.verifyResult.message ?? "Transaction found, waiting for confirmation. Check back in 1-2 minutes."}</span></>
+                  ) : (
+                    <><AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /><span>{state.verifyResult.error ?? "Could not verify transaction."}</span></>
+                  )}
                 </div>
               )}
 
@@ -226,18 +245,18 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
                   variant="gradient"
                   className="w-full"
                   onClick={verifyPayment}
-                  disabled={state.verifying}
+                  disabled={state.verifying || !txHash.trim()}
                 >
                   {state.verifying ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Checking (up to 15s)...</>
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying on-chain...</>
                   ) : (
-                    "I've sent the payment"
+                    "Verify Payment"
                   )}
                 </Button>
               )}
 
               <button
-                onClick={() => setState(s => ({ ...s, chain: null, paymentId: null, amount: null, address: null, memo: null, verifyResult: null }))}
+                onClick={() => { setState(s => ({ ...s, chain: null, paymentId: null, amount: null, address: null, memo: null, verifyResult: null })); setTxHash(""); }}
                 className="w-full text-xs text-[rgb(130,130,150)] hover:text-white text-center"
               >
                 ← Change chain

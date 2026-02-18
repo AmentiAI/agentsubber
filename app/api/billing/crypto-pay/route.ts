@@ -21,12 +21,25 @@ export async function POST(req: Request) {
 
   let amount: string;
   let address: string;
+  let expectedAmountRaw: string;
+
   if (chain === "BTC") {
-    amount = (usd / BTC_PRICE_USD).toFixed(8);
+    // Generate unique amounts for identification (random 1-999 sat added for uniqueness)
+    const baseSatoshi = Math.round((usd / BTC_PRICE_USD) * 1e8);
+    const uniqueSatoshi = baseSatoshi + Math.floor(Math.random() * 999) + 1;
+    // Safety guard: NEVER generate a payment request below 600 sats (dust / inscription threshold).
+    // In practice plan prices ensure we're always 10,000+ sats, but guard anyway.
+    if (uniqueSatoshi < 600) {
+      return NextResponse.json({ error: "Calculated BTC amount is below dust threshold. Contact support." }, { status: 400 });
+    }
+    const uniqueAmount = (uniqueSatoshi / 1e8).toFixed(8);
+    amount = uniqueAmount;
     address = BTC_TREASURY;
+    expectedAmountRaw = uniqueSatoshi.toString();
   } else if (chain === "SOL") {
     amount = (usd / SOL_PRICE_USD).toFixed(4);
     address = SOL_TREASURY;
+    expectedAmountRaw = Math.round(parseFloat(amount) * 1e9).toString();
   } else {
     return NextResponse.json({ error: "Invalid chain" }, { status: 400 });
   }
@@ -40,6 +53,7 @@ export async function POST(req: Request) {
       amountUSD: usd,
       memo,
       status: "PENDING",
+      expectedAmountRaw,
     },
   });
 
