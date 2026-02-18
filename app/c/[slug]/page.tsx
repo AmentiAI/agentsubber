@@ -217,7 +217,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   <Badge variant="live">Live</Badge>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {community.giveaways.map((g) => (
+                  {community.giveaways.map((g: any) => (
                     <GiveawayCard key={g.id} giveaway={g} communitySlug={community.slug} />
                   ))}
                 </div>
@@ -234,7 +234,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <div className="space-y-3">
-                  {community.allowlistCampaigns.map((al) => (
+                  {community.allowlistCampaigns.map((al: any) => (
                     <AllowlistCard key={al.id} allowlist={al} communitySlug={community.slug} />
                   ))}
                 </div>
@@ -251,7 +251,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {community.presales.map((p) => (
+                  {community.presales.map((p: any) => (
                     <PresaleCard key={p.id} presale={p} communitySlug={community.slug} />
                   ))}
                 </div>
