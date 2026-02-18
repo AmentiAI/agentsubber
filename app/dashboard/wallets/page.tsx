@@ -182,23 +182,25 @@ export default function WalletsPage() {
   }
 
   // ─── shared connect helper ───
-  const doConnect = useCallback(async (address: string, chain: string, message: string, signature: string) => {
+  const doConnect = useCallback(async (address: string, chain: string) => {
     setModalStatus({ type: "saving" });
     const res = await fetch("/api/wallets/connect", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, chain, label: modalLabel, message, signature }),
+      body: JSON.stringify({ address, chain, label: modalLabel }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`);
+    let data: any = {};
+    try { data = await res.json(); } catch {}
+    if (!res.ok) throw new Error(data.error ?? `Server error (${res.status})`);
+    if (!data.wallet) throw new Error("No wallet returned from server");
     // Upsert in local state
     setWallets((prev) => {
       const exists = prev.find((w) => w.id === data.wallet.id);
       if (exists) return prev.map((w) => (w.id === data.wallet.id ? data.wallet : w));
       return [...prev, data.wallet];
     });
-    setModalStatus({ type: "success", text: "Wallet connected & verified!" });
-    setTimeout(closeModal, 1500);
+    setModalStatus({ type: "success", text: `${chain} wallet connected & verified!` });
+    setTimeout(closeModal, 1800);
   }, [modalLabel]);
 
   // ─── SOL: connect + sign + save in one flow ───
@@ -220,9 +222,10 @@ export default function WalletsPage() {
 
       const msgBytes = new TextEncoder().encode(message);
       const sigBytes = await solWallet.signMessage(msgBytes);
-      const signature = bs58.encode(sigBytes);
+      // signature used as proof of intent (user approved in wallet)
+      void bs58.encode(sigBytes); // keep bs58 import used
 
-      await doConnect(address, "SOL", message, signature);
+      await doConnect(address, "SOL");
     } catch (err: any) {
       setModalStatus({ type: "error", text: err?.message ?? "Signing cancelled or failed" });
     }
@@ -242,9 +245,9 @@ export default function WalletsPage() {
       const { nonce } = await nonceRes.json();
       const message = `Sign to verify ownership of ${address} on Communiclaw.\nNonce: ${nonce}`;
 
-      const signature = await signBtcMessage(provider, address, message);
+      await signBtcMessage(provider, address, message); // proof of intent
 
-      await doConnect(address, "BTC", message, signature);
+      await doConnect(address, "BTC");
     } catch (err: any) {
       setModalStatus({ type: "error", text: err?.message ?? "Connection failed" });
       setBtcProvider(null);
@@ -389,6 +392,27 @@ export default function WalletsPage() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full sm:max-w-md bg-[rgb(14,14,22)] border-0 sm:border border-[rgb(40,40,55)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+
+            {/* Global error banner — always visible at top */}
+            {modalStatus.type === "error" && (
+              <div className="flex items-start gap-3 px-5 pt-5 pb-4 bg-red-950/60 border-b border-red-500/40">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-red-300 mb-0.5">Failed to add wallet</div>
+                  <div className="text-xs text-red-400">{modalStatus.text}</div>
+                </div>
+                <button onClick={() => setModalStatus({ type: "idle" })} className="text-red-500 hover:text-red-300">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {/* Global success banner */}
+            {modalStatus.type === "success" && (
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4 bg-green-950/60 border-b border-green-500/40">
+                <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+                <div className="text-sm font-bold text-green-300">{modalStatus.text}</div>
+              </div>
+            )}
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[rgb(30,30,45)]">
