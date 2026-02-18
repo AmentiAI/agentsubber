@@ -115,7 +115,7 @@ export default function AllowlistPage() {
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-20 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Allowlist Not Found</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Allowlist Not Found</h2>
           <Link href={`/c/${slug}`}>
             <Button variant="secondary">Back to Community</Button>
           </Link>
@@ -156,16 +156,16 @@ export default function AllowlistPage() {
                 )}
                 <Badge variant="secondary">{campaign.entryMethod}</Badge>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">{campaign.name}</h1>
-              <p className="text-[rgb(180,180,200)] leading-relaxed">{campaign.description}</p>
+              <h1 className="text-4xl font-bold text-white mb-2">{campaign.name}</h1>
+              <p className="text-lg text-[rgb(180,180,200)] leading-relaxed">{campaign.description}</p>
             </div>
 
             {/* Progress */}
             <Card>
-              <CardContent className="p-5">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-white">Spots Filled</span>
-                  <span className="text-sm text-[rgb(130,130,150)]">
+                  <span className="text-base font-semibold text-white">Spots Filled</span>
+                  <span className="text-base text-[rgb(130,130,150)]">
                     {campaign.filledSpots} / {campaign.totalSpots}
                   </span>
                 </div>
@@ -175,7 +175,7 @@ export default function AllowlistPage() {
                     style={{ width: `${Math.min(pct, 100)}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-[rgb(130,130,150)]">
+                <div className="flex items-center justify-between mt-3 text-sm text-[rgb(130,130,150)]">
                   <span>{pct}% filled</span>
                   <span>{campaign.totalSpots - campaign.filledSpots} spots remaining</span>
                 </div>
@@ -183,29 +183,29 @@ export default function AllowlistPage() {
             </Card>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
               <Card>
-                <CardContent className="p-4 text-center">
-                  <Users className="w-5 h-5 text-indigo-400 mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-white">{campaign._count?.entries ?? campaign.filledSpots}</div>
-                  <div className="text-xs text-[rgb(130,130,150)]">Registrations</div>
+                <CardContent className="p-6 text-center">
+                  <Users className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+                  <div className="text-4xl font-black text-white">{campaign._count?.entries ?? campaign.filledSpots}</div>
+                  <div className="text-sm text-[rgb(130,130,150)]">Registrations</div>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4 text-center">
-                  <List className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-white">{campaign.totalSpots}</div>
-                  <div className="text-xs text-[rgb(130,130,150)]">Total Spots</div>
+                <CardContent className="p-6 text-center">
+                  <List className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                  <div className="text-4xl font-black text-white">{campaign.totalSpots}</div>
+                  <div className="text-sm text-[rgb(130,130,150)]">Total Spots</div>
                 </CardContent>
               </Card>
               {campaign.closesAt && (
                 <Card>
-                  <CardContent className="p-4 text-center">
-                    <Clock className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-                    <div className="text-sm font-bold text-white">
+                  <CardContent className="p-6 text-center">
+                    <Clock className="w-6 h-6 text-orange-400 mx-auto mb-2" />
+                    <div className="text-lg font-bold text-white">
                       {hasClosed ? "Closed" : timeUntil(new Date(campaign.closesAt))}
                     </div>
-                    <div className="text-xs text-[rgb(130,130,150)]">Until close</div>
+                    <div className="text-sm text-[rgb(130,130,150)]">Until close</div>
                   </CardContent>
                 </Card>
               )}
@@ -216,11 +216,11 @@ export default function AllowlistPage() {
           <aside className="space-y-4">
             {/* Entry card */}
             <Card className={isActive && !isFull && !hasClosed ? "border-indigo-500/30" : ""}>
-              <CardContent className="p-5">
+              <CardContent className="p-6">
                 {!session ? (
                   <div className="text-center">
-                    <List className="w-10 h-10 text-indigo-400 mx-auto mb-3" />
-                    <p className="text-sm text-[rgb(200,200,210)] mb-4">
+                    <List className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
+                    <p className="text-base text-[rgb(200,200,210)] mb-4">
                       Sign in to register for this allowlist.
                     </p>
                     <Link href="/login">
@@ -232,24 +232,24 @@ export default function AllowlistPage() {
                   </div>
                 ) : entered ? (
                   <div className="text-center py-2">
-                    <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-3" />
-                    <p className="text-sm font-semibold text-white mb-1">You&apos;re on the list!</p>
-                    <p className="text-xs text-[rgb(130,130,150)]">
+                    <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                    <p className="text-base font-semibold text-white mb-2">You&apos;re on the list!</p>
+                    <p className="text-sm text-[rgb(130,130,150)]">
                       Your wallet has been registered.
                     </p>
                   </div>
                 ) : !isActive || isFull || hasClosed ? (
                   <div className="text-center py-2">
-                    <AlertCircle className="w-8 h-8 text-orange-400 mx-auto mb-3" />
-                    <p className="text-sm text-[rgb(200,200,210)]">
+                    <AlertCircle className="w-10 h-10 text-orange-400 mx-auto mb-4" />
+                    <p className="text-base text-[rgb(200,200,210)]">
                       {isFull ? "This allowlist is full." : hasClosed ? "Registration has closed." : "This allowlist is not open."}
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-white">Register Wallet</h3>
+                  <div className="space-y-4">
+                    <h3 className="text-base font-semibold text-white">Register Wallet</h3>
                     <div>
-                      <label className="text-xs text-[rgb(130,130,150)] mb-1 block">
+                      <label className="text-sm text-[rgb(130,130,150)] mb-1.5 block">
                         Wallet Address *
                       </label>
                       <Input
@@ -264,7 +264,7 @@ export default function AllowlistPage() {
                       </p>
                     </div>
                     {error && (
-                      <p className="text-xs text-red-400 flex items-center gap-1">
+                      <p className="text-sm text-red-400 flex items-center gap-1">
                         <AlertCircle className="w-3.5 h-3.5" />
                         {error}
                       </p>
@@ -292,8 +292,8 @@ export default function AllowlistPage() {
             {/* Owner export */}
             {isOwner && (
               <Card className="border-orange-500/20">
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-semibold text-white mb-3">Owner Tools</h3>
+                <CardContent className="p-5">
+                  <h3 className="text-base font-semibold text-white mb-3">Owner Tools</h3>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -309,7 +309,7 @@ export default function AllowlistPage() {
 
             {/* Info */}
             <Card>
-              <CardContent className="p-4 space-y-3 text-sm">
+              <CardContent className="p-5 space-y-3 text-base">
                 <div className="flex justify-between">
                   <span className="text-[rgb(130,130,150)]">Community</span>
                   <Link href={`/c/${slug}`} className="text-indigo-400 hover:underline">

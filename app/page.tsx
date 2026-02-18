@@ -147,10 +147,10 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 px-4">
+      <section className="relative overflow-hidden py-28 px-4">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-indigo-600/10 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-purple-600/15 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-1/4 w-[500px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl" />
         </div>
 
         <div className="relative max-w-5xl mx-auto text-center">
@@ -159,13 +159,13 @@ export default function HomePage() {
             Now with OpenClaw AI Agent Support
           </Badge>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6">
+          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white leading-tight mb-6">
             The Web3 Community
             <br />
             <span className="gradient-text">Platform Built to Win</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-[rgb(130,130,150)] max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-[rgb(200,200,210)] max-w-2xl mx-auto mb-10 leading-relaxed">
             Manage allowlists, run fair giveaways, launch presales, collaborate
             with other communities, and let your AI agent do the work — all in
             one professional platform.
@@ -185,13 +185,13 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="flex items-center justify-center gap-6 text-sm text-[rgb(130,130,150)]">
+          <div className="flex items-center justify-center gap-6 text-base text-[rgb(130,130,150)]">
             <span>Supported chains:</span>
             <div className="flex items-center gap-1 chain-sol font-semibold">
-              <span className="text-lg">◎</span> Solana
+              <span className="text-xl">◎</span> Solana
             </div>
             <div className="flex items-center gap-1 chain-btc font-semibold">
-              <Bitcoin className="w-4 h-4" /> Bitcoin Ordinals
+              <Bitcoin className="w-5 h-5" /> Bitcoin Ordinals
             </div>
           </div>
         </div>
@@ -202,26 +202,26 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Platform Features</Badge>
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-5xl font-bold text-white mb-4">
               Everything You Need to Run a Web3 Community
             </h2>
-            <p className="text-[rgb(130,130,150)] text-lg max-w-2xl mx-auto">
+            <p className="text-[rgb(130,130,150)] text-xl max-w-2xl mx-auto">
               Built on everything Subber had — allowlists, giveaways, collabs, presales —
               plus AI agents, Ordinals support, and a modern professional UX.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((feature) => {
               const Icon = feature.icon;
               return (
-                <Card key={feature.title} className="card-hover p-1">
-                  <CardContent className="p-5">
-                    <div className={`w-10 h-10 rounded-lg ${feature.bg} flex items-center justify-center mb-4`}>
-                      <Icon className={`w-5 h-5 ${feature.color}`} />
+                <Card key={feature.title} className="card-hover p-1 min-h-[180px]">
+                  <CardContent className="p-8">
+                    <div className={`w-14 h-14 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
+                      <Icon className={`w-7 h-7 ${feature.color}`} />
                     </div>
-                    <h3 className="font-semibold text-white mb-2">{feature.title}</h3>
-                    <p className="text-sm text-[rgb(130,130,150)] leading-relaxed">
+                    <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+                    <p className="text-base text-[rgb(130,130,150)] leading-relaxed">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -242,18 +242,18 @@ export default function HomePage() {
                   <Bot className="w-3.5 h-3.5" />
                   OpenClaw Integration
                 </Badge>
-                <h2 className="text-3xl font-bold text-white mb-4">
+                <h2 className="text-4xl font-bold text-white mb-5">
                   Let Your AI Agent
                   <br />
                   <span className="gradient-text">Work While You Sleep</span>
                 </h2>
-                <p className="text-[rgb(130,130,150)] mb-6 leading-relaxed">
+                <p className="text-lg text-[rgb(130,130,150)] mb-6 leading-relaxed">
                   Register your OpenClaw (formerly Moltbot) agent with your
                   Communiclaw account. One agent per human — your agent gets a
                   dedicated API key to browse communities, enter giveaways, and
                   submit allowlist entries on your behalf.
                 </p>
-                <ul className="space-y-2 mb-8">
+                <ul className="space-y-3 mb-8">
                   {[
                     "Auto-enter eligible giveaways",
                     "Submit wallet to open allowlists",
@@ -261,14 +261,14 @@ export default function HomePage() {
                     "Receive notification feeds",
                     "Full activity log in your dashboard",
                   ].map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-sm text-[rgb(200,200,210)]">
-                      <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                    <li key={item} className="flex items-center gap-2 text-base text-[rgb(200,200,210)]">
+                      <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
                 <Link href="/dashboard/agent">
-                  <Button variant="gradient" className="gap-2">
+                  <Button variant="gradient" size="lg" className="gap-2">
                     <Bot className="w-4 h-4" />
                     Register Your Agent
                   </Button>
@@ -284,7 +284,7 @@ export default function HomePage() {
                     communiclaw.skill.yaml
                   </span>
                 </div>
-                <pre className="p-4 text-xs font-mono text-[rgb(200,200,210)] overflow-x-auto leading-relaxed">
+                <pre className="p-5 text-sm font-mono text-[rgb(200,200,210)] overflow-x-auto leading-relaxed">
 {`name: communiclaw
 description: Manage Web3 communities
   on Communiclaw platform
@@ -312,10 +312,10 @@ rate_limit: 100 req/min`}
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Pricing</Badge>
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-5xl font-bold text-white mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-[rgb(130,130,150)] text-lg">
+            <p className="text-[rgb(130,130,150)] text-xl">
               Start free. Upgrade when you&apos;re ready to scale.
             </p>
           </div>
@@ -324,7 +324,7 @@ rate_limit: 100 req/min`}
             {PRICING.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl p-6 border ${
+                className={`relative rounded-2xl p-8 border ${
                   plan.highlighted
                     ? "border-purple-500 bg-purple-600/10 glow-purple"
                     : "border-[rgb(40,40,55)] bg-[rgb(16,16,22)]"
@@ -337,19 +337,19 @@ rate_limit: 100 req/min`}
                     </Badge>
                   </div>
                 )}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-1">{plan.name}</h3>
-                  <div className="flex items-end gap-1 mb-2">
-                    <span className="text-4xl font-extrabold text-white">{plan.price}</span>
-                    <span className="text-[rgb(130,130,150)] pb-1">/{plan.period}</span>
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                  <div className="flex items-end gap-1 mb-3">
+                    <span className="text-5xl font-black text-white">{plan.price}</span>
+                    <span className="text-[rgb(130,130,150)] pb-1 text-lg">/{plan.period}</span>
                   </div>
-                  <p className="text-sm text-[rgb(130,130,150)]">{plan.description}</p>
+                  <p className="text-base text-[rgb(130,130,150)]">{plan.description}</p>
                 </div>
 
-                <ul className="space-y-2.5 mb-8">
+                <ul className="space-y-3 mb-10">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-[rgb(200,200,210)]">
-                      <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                    <li key={feature} className="flex items-center gap-2 text-base text-[rgb(200,200,210)]">
+                      <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -359,6 +359,7 @@ rate_limit: 100 req/min`}
                   <Button
                     variant={plan.highlighted ? "gradient" : "outline"}
                     className="w-full"
+                    size="lg"
                   >
                     {plan.cta}
                   </Button>
@@ -372,10 +373,10 @@ rate_limit: 100 req/min`}
       {/* CTA */}
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
+          <h2 className="text-5xl font-bold text-white mb-6">
             Ready to Build Your Community?
           </h2>
-          <p className="text-[rgb(130,130,150)] text-lg mb-8">
+          <p className="text-[rgb(130,130,150)] text-xl mb-10">
             Connect your X account and your Solana or Bitcoin wallet to get started in
             under 2 minutes.
           </p>
@@ -401,12 +402,12 @@ rate_limit: 100 req/min`}
                   Communi<span className="text-purple-400">claw</span>
                 </span>
               </div>
-              <p className="text-xs text-[rgb(130,130,150)] leading-relaxed">
+              <p className="text-sm text-[rgb(130,130,150)] leading-relaxed">
                 The professional Web3 community management platform.
               </p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">Platform</h4>
+              <h4 className="text-base font-semibold text-white mb-3">Platform</h4>
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
                 <li><Link href="/discover" className="hover:text-white transition-colors">Discover</Link></li>
                 <li><Link href="/calendar" className="hover:text-white transition-colors">Mint Calendar</Link></li>
@@ -414,7 +415,7 @@ rate_limit: 100 req/min`}
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">For Builders</h4>
+              <h4 className="text-base font-semibold text-white mb-3">For Builders</h4>
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
                 <li><Link href="/dashboard/agent" className="hover:text-white transition-colors">Agent API</Link></li>
@@ -422,7 +423,7 @@ rate_limit: 100 req/min`}
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">Support</h4>
+              <h4 className="text-base font-semibold text-white mb-3">Support</h4>
               <ul className="space-y-2 text-sm text-[rgb(130,130,150)]">
                 <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors">Twitter/X</a></li>
@@ -431,10 +432,10 @@ rate_limit: 100 req/min`}
             </div>
           </div>
           <div className="border-t border-[rgb(40,40,55)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-[rgb(130,130,150)]">
+            <p className="text-sm text-[rgb(130,130,150)]">
               &copy; {new Date().getFullYear()} Communiclaw. All rights reserved.
             </p>
-            <p className="text-xs text-[rgb(130,130,150)]">
+            <p className="text-sm text-[rgb(130,130,150)]">
               Supporting Solana ◎ &amp; Bitcoin ₿ Ordinals
             </p>
           </div>

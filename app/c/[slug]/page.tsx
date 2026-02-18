@@ -100,7 +100,7 @@ export default async function CommunityPage({ params }: PageProps) {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 mb-8">
           <div className="flex items-end gap-4">
             {/* Logo */}
-            <div className="w-20 h-20 rounded-2xl border-4 border-[rgb(10,10,15)] bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shrink-0 overflow-hidden">
+            <div className="w-24 h-24 rounded-2xl border-4 border-[rgb(10,10,15)] bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shrink-0 overflow-hidden">
               {community.logoUrl ? (
                 <img src={community.logoUrl} alt={community.name} className="w-full h-full object-cover" />
               ) : (
@@ -109,9 +109,9 @@ export default async function CommunityPage({ params }: PageProps) {
             </div>
             <div className="pb-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-white">{community.name}</h1>
+                <h1 className="text-3xl font-black text-white">{community.name}</h1>
                 {community.verified && (
-                  <CheckCircle className="w-5 h-5 text-purple-400" />
+                  <CheckCircle className="w-6 h-6 text-purple-400" />
                 )}
                 <Badge variant={community.chain === "SOL" ? "sol" : "btc"}>
                   {chainIcon} {community.chain}
@@ -123,9 +123,9 @@ export default async function CommunityPage({ params }: PageProps) {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3 mt-1 text-sm text-[rgb(130,130,150)]">
+              <div className="flex items-center gap-3 mt-2 text-base text-[rgb(130,130,150)]">
                 <span className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
+                  <Users className="w-4 h-4" />
                   {formatNumber(community.memberCount)} members
                 </span>
                 {community.twitterHandle && (
@@ -135,7 +135,7 @@ export default async function CommunityPage({ params }: PageProps) {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 hover:text-white transition-colors"
                   >
-                    <Twitter className="w-3.5 h-3.5" />@{community.twitterHandle}
+                    <Twitter className="w-4 h-4" />@{community.twitterHandle}
                   </a>
                 )}
               </div>
@@ -180,25 +180,25 @@ export default async function CommunityPage({ params }: PageProps) {
 
         {/* Description */}
         {community.description && (
-          <p className="text-[rgb(200,200,210)] mb-8 leading-relaxed max-w-2xl">
+          <p className="text-lg text-[rgb(200,200,210)] mb-8 leading-relaxed max-w-2xl">
             {community.description}
           </p>
         )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-3 gap-5 mb-10">
           <StatCard
-            icon={<Gift className="w-4 h-4 text-purple-400" />}
+            icon={<Gift className="w-5 h-5 text-purple-400" />}
             label="Active Giveaways"
             value={activeGiveaways.length}
           />
           <StatCard
-            icon={<List className="w-4 h-4 text-indigo-400" />}
+            icon={<List className="w-5 h-5 text-indigo-400" />}
             label="Allowlists"
             value={activeAllowlists.length}
           />
           <StatCard
-            icon={<ShoppingBag className="w-4 h-4 text-green-400" />}
+            icon={<ShoppingBag className="w-5 h-5 text-green-400" />}
             label="Presales"
             value={activePresales.length}
           />
@@ -209,14 +209,14 @@ export default async function CommunityPage({ params }: PageProps) {
             {/* Giveaways */}
             {activeGiveaways.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Gift className="w-5 h-5 text-purple-400" />
                     Active Giveaways
                   </h2>
                   <Badge variant="live">Live</Badge>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {activeGiveaways.map((g: any) => (
                     <GiveawayCard key={g.id} giveaway={g} communitySlug={community.slug} />
                   ))}
@@ -227,13 +227,13 @@ export default async function CommunityPage({ params }: PageProps) {
             {/* Allowlists */}
             {activeAllowlists.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <List className="w-5 h-5 text-indigo-400" />
                     Open Allowlists
                   </h2>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {activeAllowlists.map((al: any) => (
                     <AllowlistCard key={al.id} allowlist={al} communitySlug={community.slug} />
                   ))}
@@ -244,13 +244,13 @@ export default async function CommunityPage({ params }: PageProps) {
             {/* Presales */}
             {activePresales.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <ShoppingBag className="w-5 h-5 text-green-400" />
                     Presales
                   </h2>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {activePresales.map((p: any) => (
                     <PresaleCard key={p.id} presale={p} communitySlug={community.slug} />
                   ))}
@@ -262,8 +262,8 @@ export default async function CommunityPage({ params }: PageProps) {
               activeAllowlists.length === 0 &&
               activePresales.length === 0 && (
                 <div className="text-center py-16 text-[rgb(130,130,150)]">
-                  <Gift className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>No active campaigns right now. Check back soon!</p>
+                  <Gift className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg">No active campaigns right now. Check back soon!</p>
                 </div>
               )}
           </div>
@@ -272,9 +272,9 @@ export default async function CommunityPage({ params }: PageProps) {
           <aside className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">About</CardTitle>
+                <CardTitle className="text-base">About</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-3 text-base">
                 <div className="flex justify-between">
                   <span className="text-[rgb(130,130,150)]">Chain</span>
                   <span className={`font-semibold ${chainColor}`}>
@@ -300,8 +300,8 @@ export default async function CommunityPage({ params }: PageProps) {
 
             {!session && (
               <Card className="border-purple-500/30 bg-purple-600/10">
-                <CardContent className="p-4">
-                  <p className="text-sm text-[rgb(200,200,210)] mb-3">
+                <CardContent className="p-5">
+                  <p className="text-base text-[rgb(200,200,210)] mb-4">
                     Connect your X account and wallet to enter giveaways and join allowlists.
                   </p>
                   <Link href="/login">
@@ -324,13 +324,13 @@ export default async function CommunityPage({ params }: PageProps) {
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <Card>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-[rgb(30,30,40)] flex items-center justify-center shrink-0">
+      <CardContent className="p-6 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-[rgb(30,30,40)] flex items-center justify-center shrink-0">
           {icon}
         </div>
         <div>
-          <div className="text-lg font-bold text-white">{value}</div>
-          <div className="text-xs text-[rgb(130,130,150)]">{label}</div>
+          <div className="text-3xl font-black text-white">{value}</div>
+          <div className="text-sm text-[rgb(130,130,150)]">{label}</div>
         </div>
       </CardContent>
     </Card>
@@ -341,13 +341,13 @@ function GiveawayCard({ giveaway, communitySlug }: { giveaway: any; communitySlu
   return (
     <Link href={`/c/${communitySlug}/giveaways/${giveaway.id}`}>
       <Card className="card-hover">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-sm font-semibold text-white leading-tight">{giveaway.title}</h3>
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-base font-semibold text-white leading-tight">{giveaway.title}</h3>
             <Badge variant="live" className="shrink-0 ml-2">Live</Badge>
           </div>
-          <p className="text-xs text-purple-400 font-medium mb-3">Prize: {giveaway.prize}</p>
-          <div className="flex items-center justify-between text-xs text-[rgb(130,130,150)]">
+          <p className="text-sm text-purple-400 font-medium mb-3">Prize: {giveaway.prize}</p>
+          <div className="flex items-center justify-between text-sm text-[rgb(130,130,150)]">
             <span>{giveaway._count?.entries ?? 0} entries</span>
             <span>{giveaway.totalWinners} winner{giveaway.totalWinners !== 1 ? "s" : ""}</span>
             <span className="text-yellow-400">⏱ {timeUntil(new Date(giveaway.endAt))}</span>
@@ -363,19 +363,19 @@ function AllowlistCard({ allowlist, communitySlug }: { allowlist: any; community
   return (
     <Link href={`/c/${communitySlug}/allowlist/${allowlist.id}`}>
       <Card className="card-hover">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-white">{allowlist.name}</h3>
-            <Badge variant="secondary" className="text-xs">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-white">{allowlist.name}</h3>
+            <Badge variant="secondary" className="text-sm">
               {allowlist.entryMethod}
             </Badge>
           </div>
           <div className="mb-1">
-            <div className="flex justify-between text-xs text-[rgb(130,130,150)] mb-1">
+            <div className="flex justify-between text-sm text-[rgb(130,130,150)] mb-1">
               <span>{allowlist.filledSpots} / {allowlist.totalSpots} spots</span>
               <span>{pct}%</span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-[rgb(30,30,40)]">
+            <div className="w-full h-2.5 rounded-full bg-[rgb(30,30,40)]">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600"
                 style={{ width: `${Math.min(pct, 100)}%` }}
@@ -383,7 +383,7 @@ function AllowlistCard({ allowlist, communitySlug }: { allowlist: any; community
             </div>
           </div>
           {allowlist.closesAt && (
-            <div className="text-xs text-[rgb(130,130,150)] mt-2">
+            <div className="text-sm text-[rgb(130,130,150)] mt-2">
               Closes {timeUntil(new Date(allowlist.closesAt))}
             </div>
           )}
@@ -398,17 +398,17 @@ function PresaleCard({ presale, communitySlug }: { presale: any; communitySlug: 
   return (
     <Link href={`/c/${communitySlug}/presale/${presale.id}`}>
       <Card className="card-hover">
-        <CardContent className="p-4">
-          <h3 className="text-sm font-semibold text-white mb-1">{presale.name}</h3>
-          <div className="text-xs text-green-400 font-medium mb-2">
+        <CardContent className="p-5">
+          <h3 className="text-base font-semibold text-white mb-1">{presale.name}</h3>
+          <div className="text-sm text-green-400 font-medium mb-3">
             {presale.priceSOL ? `${presale.priceSOL} SOL` : ""}
             {presale.priceBTC ? `${presale.priceBTC} BTC` : ""}
           </div>
-          <div className="flex justify-between text-xs text-[rgb(130,130,150)]">
+          <div className="flex justify-between text-sm text-[rgb(130,130,150)]">
             <span>{presale.soldCount} / {presale.totalSupply} sold</span>
             <span>{soldPct}%</span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-[rgb(30,30,40)] mt-1">
+          <div className="w-full h-2.5 rounded-full bg-[rgb(30,30,40)] mt-2">
             <div
               className="h-full rounded-full bg-gradient-to-r from-green-600 to-emerald-600"
               style={{ width: `${Math.min(soldPct, 100)}%` }}

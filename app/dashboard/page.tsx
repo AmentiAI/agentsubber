@@ -93,10 +93,10 @@ export default function DashboardPage() {
             {/* Welcome */}
             <div className="flex items-start justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-white mb-1">
+                <h1 className="text-3xl font-bold text-white mb-1">
                   Welcome back, {displayName} 👋
                 </h1>
-                <p className="text-[rgb(130,130,150)]">
+                <p className="text-base text-[rgb(130,130,150)]">
                   Here&apos;s what&apos;s happening with your communities.
                 </p>
               </div>
@@ -107,27 +107,27 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
               <StatCard
-                icon={<Users className="w-4 h-4 text-purple-400" />}
+                icon={<Users className="w-6 h-6 text-purple-400" />}
                 label="Communities"
                 value={stats?.communities ?? 0}
                 loading={loading}
               />
               <StatCard
-                icon={<Gift className="w-4 h-4 text-indigo-400" />}
+                icon={<Gift className="w-6 h-6 text-indigo-400" />}
                 label="Active Giveaways"
                 value={stats?.activeGiveaways ?? 0}
                 loading={loading}
               />
               <StatCard
-                icon={<List className="w-4 h-4 text-cyan-400" />}
+                icon={<List className="w-6 h-6 text-cyan-400" />}
                 label="AL Entries"
                 value={stats?.allowlistEntries ?? 0}
                 loading={loading}
               />
               <StatCard
-                icon={<Trophy className="w-4 h-4 text-yellow-400" />}
+                icon={<Trophy className="w-6 h-6 text-yellow-400" />}
                 label="Giveaway Wins"
                 value={stats?.wins ?? 0}
                 loading={loading}
@@ -135,22 +135,22 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mb-10">
+              <h2 className="text-xl font-bold text-white mb-5">Quick Actions</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                 {QUICK_ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
                     <Link key={action.label} href={action.href}>
                       <Card className="card-hover cursor-pointer">
-                        <CardContent className="p-4">
-                          <div className={`w-10 h-10 rounded-xl ${action.bg} flex items-center justify-center mb-3`}>
-                            <Icon className={`w-5 h-5 ${action.color}`} />
+                        <CardContent className="p-6">
+                          <div className={`w-14 h-14 rounded-2xl ${action.bg} flex items-center justify-center mb-4`}>
+                            <Icon className={`w-7 h-7 ${action.color}`} />
                           </div>
-                          <div className="font-semibold text-white text-sm mb-0.5">
+                          <div className="font-bold text-white text-base mb-1">
                             {action.label}
                           </div>
-                          <div className="text-xs text-[rgb(130,130,150)]">
+                          <div className="text-sm text-[rgb(130,130,150)]">
                             {action.description}
                           </div>
                         </CardContent>
@@ -165,18 +165,18 @@ export default function DashboardPage() {
               {/* Agent status */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Bot className="w-4 h-4 text-purple-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Bot className="w-5 h-5 text-purple-400" />
                     OpenClaw Agent
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   {stats?.agentRegistered ? (
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div className="flex items-center gap-4">
+                      <CheckCircle className="w-6 h-6 text-green-400 shrink-0" />
                       <div>
-                        <div className="text-sm font-medium text-white">Agent registered</div>
-                        <div className="text-xs text-[rgb(130,130,150)]">
+                        <div className="text-base font-semibold text-white">Agent registered</div>
+                        <div className="text-sm text-[rgb(130,130,150)]">
                           Your agent is active and can enter giveaways on your behalf.
                         </div>
                       </div>
@@ -187,13 +187,13 @@ export default function DashboardPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[rgb(30,30,40)] flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-[rgb(130,130,150)]" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[rgb(30,30,40)] flex items-center justify-center shrink-0">
+                        <Bot className="w-6 h-6 text-[rgb(130,130,150)]" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">No agent yet</div>
-                        <div className="text-xs text-[rgb(130,130,150)]">
+                        <div className="text-base font-semibold text-white">No agent yet</div>
+                        <div className="text-sm text-[rgb(130,130,150)]">
                           Register your OpenClaw agent to auto-enter giveaways.
                         </div>
                       </div>
@@ -211,20 +211,20 @@ export default function DashboardPage() {
               {/* Wallet status */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Wallet className="w-4 h-4 text-purple-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Wallet className="w-5 h-5 text-purple-400" />
                     Connected Wallets
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   {(stats?.wallets ?? 0) > 0 ? (
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div className="flex items-center gap-4">
+                      <CheckCircle className="w-6 h-6 text-green-400 shrink-0" />
                       <div>
-                        <div className="text-sm font-medium text-white">
+                        <div className="text-base font-semibold text-white">
                           {stats?.wallets} wallet{(stats?.wallets ?? 0) !== 1 ? "s" : ""} connected
                         </div>
-                        <div className="text-xs text-[rgb(130,130,150)]">
+                        <div className="text-sm text-[rgb(130,130,150)]">
                           Your wallets are linked and ready to use.
                         </div>
                       </div>
@@ -235,13 +235,13 @@ export default function DashboardPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[rgb(30,30,40)] flex items-center justify-center">
-                        <Wallet className="w-4 h-4 text-[rgb(130,130,150)]" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[rgb(30,30,40)] flex items-center justify-center shrink-0">
+                        <Wallet className="w-6 h-6 text-[rgb(130,130,150)]" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">No wallets</div>
-                        <div className="text-xs text-[rgb(130,130,150)]">
+                        <div className="text-base font-semibold text-white">No wallets</div>
+                        <div className="text-sm text-[rgb(130,130,150)]">
                           Connect a Solana or Bitcoin wallet to enter giveaways.
                         </div>
                       </div>
@@ -259,11 +259,11 @@ export default function DashboardPage() {
 
             {/* Upgrade prompt for free users */}
             {plan === "FREE" && (
-              <div className="mt-6 p-4 rounded-xl border border-purple-500/30 bg-purple-600/10 flex items-center gap-4">
-                <TrendingUp className="w-8 h-8 text-purple-400 shrink-0" />
+              <div className="mt-6 p-6 rounded-xl border border-purple-500/30 bg-purple-600/10 flex items-center gap-5">
+                <TrendingUp className="w-10 h-10 text-purple-400 shrink-0" />
                 <div className="flex-1">
-                  <div className="font-semibold text-white mb-0.5">Unlock more with Pro</div>
-                  <div className="text-sm text-[rgb(130,130,150)]">
+                  <div className="text-lg font-bold text-white mb-1">Unlock more with Pro</div>
+                  <div className="text-base text-[rgb(130,130,150)]">
                     Get 5 communities, unlimited giveaways, collabs, presales, and 2x giveaway multiplier.
                   </div>
                 </div>
@@ -295,14 +295,14 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-3">
           {icon}
-          <span className="text-xs text-[rgb(130,130,150)]">{label}</span>
+          <span className="text-sm text-[rgb(130,130,150)]">{label}</span>
         </div>
-        <div className="text-2xl font-bold text-white">
+        <div className="text-4xl font-black text-white">
           {loading ? (
-            <div className="w-12 h-7 rounded shimmer" />
+            <div className="w-16 h-10 rounded shimmer" />
           ) : (
             formatNumber(value)
           )}
