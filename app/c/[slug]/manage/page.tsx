@@ -1215,9 +1215,9 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
                   {/* Position sliders — only shown when logo is set */}
                   {form.logoUrl && (
                     <PositionPicker
+                      logoUrl={form.logoUrl}
                       value={form.logoPosition}
                       onChange={(v) => setForm((prev) => ({ ...prev, logoPosition: v }))}
-                      label="Focal Point"
                     />
                   )}
                 </div>
@@ -1267,6 +1267,7 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
                 <div className="mt-3 space-y-3">
                   <BannerPositionPicker
                     bannerUrl={form.bannerUrl}
+                    logoUrl={form.logoUrl}
                     value={form.bannerPosition}
                     onChange={(v) => setForm((prev) => ({ ...prev, bannerPosition: v }))}
                   />
@@ -1458,54 +1459,70 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
   );
 }
 
-/* ─── PositionPicker — X/Y sliders for logo focal point ─── */
+/* ─── PositionPicker — sliders + live logo-in-context preview ─── */
 function PositionPicker({
+  logoUrl,
   value,
   onChange,
-  label = "Focal Point",
 }: {
+  logoUrl: string;
   value: string;
   onChange: (v: string) => void;
-  label?: string;
 }) {
   const parse = (v: string) => {
     const parts = v.split(" ");
-    const x = parseFloat(parts[0]) || 50;
-    const y = parseFloat(parts[1]) || 50;
-    return { x, y };
+    return { x: parseFloat(parts[0]) || 50, y: parseFloat(parts[1]) || 50 };
   };
   const { x, y } = parse(value);
 
   const update = (axis: "x" | "y", num: number) => {
-    const next = axis === "x" ? `${num}% ${y}%` : `${x}% ${num}%`;
-    onChange(next);
+    onChange(axis === "x" ? `${num}% ${y}%` : `${x}% ${num}%`);
   };
 
   return (
-    <div className="space-y-2 pt-1">
-      <p className="text-xs text-[rgb(100,100,120)]">
-        {label} — drag sliders to reposition image
-      </p>
+    <div className="space-y-3 pt-1">
+      {/* ── Live context preview ── */}
+      <div className="rounded-xl overflow-hidden border border-[rgb(40,40,55)] bg-[rgb(10,10,16)] select-none">
+        {/* mock banner strip */}
+        <div className="h-10 bg-gradient-to-br from-purple-900/40 via-indigo-900/30 to-[rgb(10,10,15)]" />
+        {/* community header row */}
+        <div className="flex items-end gap-3 px-3 pb-3 -mt-5">
+          {/* logo in exact same frame as public page */}
+          <div className="w-14 h-14 rounded-xl border-4 border-[rgb(10,10,16)] bg-gradient-to-br from-purple-600 to-indigo-600 overflow-hidden shrink-0 shadow-lg">
+            <img
+              src={logoUrl}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover pointer-events-none"
+              style={{ objectPosition: value }}
+            />
+          </div>
+          {/* mock name / tag placeholders */}
+          <div className="pb-1 space-y-1.5 flex-1 min-w-0">
+            <div className="h-3 w-28 bg-[rgb(40,40,55)] rounded-full" />
+            <div className="h-2 w-16 bg-[rgb(30,30,40)] rounded-full" />
+          </div>
+        </div>
+        <div className="px-3 pb-2">
+          <p className="text-[10px] text-[rgb(80,80,100)]">← Live preview of how your logo appears on your public page</p>
+        </div>
+      </div>
+
+      {/* ── Sliders ── */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[rgb(130,130,150)] w-12">Left ↔ Right</span>
+          <span className="text-xs text-[rgb(130,130,150)] w-12 shrink-0">Left ↔ Right</span>
           <input
-            type="range"
-            min={0}
-            max={100}
-            value={x}
+            type="range" min={0} max={100} value={x}
             onChange={(e) => update("x", Number(e.target.value))}
             className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
           />
           <span className="text-xs text-[rgb(130,130,150)] w-8 text-right">{Math.round(x)}%</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[rgb(130,130,150)] w-12">Top ↕ Bottom</span>
+          <span className="text-xs text-[rgb(130,130,150)] w-12 shrink-0">Top ↕ Bottom</span>
           <input
-            type="range"
-            min={0}
-            max={100}
-            value={y}
+            type="range" min={0} max={100} value={y}
             onChange={(e) => update("y", Number(e.target.value))}
             className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
           />
@@ -1516,17 +1533,19 @@ function PositionPicker({
   );
 }
 
-/* ─── BannerPositionPicker — live drag preview for banner ─── */
+/* ─── BannerPositionPicker — drag crosshair + full community-header preview ─── */
 function BannerPositionPicker({
   bannerUrl,
+  logoUrl,
   value,
   onChange,
 }: {
   bannerUrl: string;
+  logoUrl?: string;
   value: string;
   onChange: (v: string) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
   const parse = (v: string) => {
@@ -1536,72 +1555,91 @@ function BannerPositionPicker({
   const pos = parse(value);
 
   const updateFromEvent = (e: React.MouseEvent | MouseEvent) => {
-    const rect = containerRef.current?.getBoundingClientRect();
+    const rect = dragRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
     onChange(`${Math.round(x)}% ${Math.round(y)}%`);
   };
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    dragging.current = true;
-    updateFromEvent(e);
-  };
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!dragging.current) return;
-    updateFromEvent(e);
-  };
+  const onMouseDown = (e: React.MouseEvent) => { dragging.current = true; updateFromEvent(e); };
+  const onMouseMove = (e: React.MouseEvent) => { if (dragging.current) updateFromEvent(e); };
   const onMouseUp = () => { dragging.current = false; };
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-[rgb(100,100,120)]">
-        Click or drag on the preview to set focal point
-      </p>
-      <div
-        ref={containerRef}
-        className="relative w-full h-24 rounded-xl overflow-hidden cursor-crosshair border border-[rgb(40,40,55)] select-none"
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-      >
-        <img
-          src={bannerUrl}
-          alt="Banner position"
-          className="w-full h-full object-cover pointer-events-none"
-          style={{ objectPosition: value }}
-          draggable={false}
-        />
-        {/* Crosshair dot */}
+    <div className="space-y-3">
+      {/* ── Drag zone ── */}
+      <div>
+        <p className="text-xs text-[rgb(100,100,120)] mb-1.5">
+          Drag the crosshair to set which part of the image stays visible
+        </p>
         <div
-          className="absolute w-5 h-5 rounded-full border-2 border-white shadow-lg bg-white/20 -translate-x-1/2 -translate-y-1/2 pointer-events-none ring-1 ring-black/30"
-          style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-        />
-        {/* Crosshair lines */}
-        <div
-          className="absolute top-0 bottom-0 w-px bg-white/40 pointer-events-none"
-          style={{ left: `${pos.x}%` }}
-        />
-        <div
-          className="absolute left-0 right-0 h-px bg-white/40 pointer-events-none"
-          style={{ top: `${pos.y}%` }}
-        />
-        <div className="absolute bottom-1.5 right-2 text-[10px] text-white/60 font-mono pointer-events-none">
-          {Math.round(pos.x)}% · {Math.round(pos.y)}%
+          ref={dragRef}
+          className="relative w-full h-20 rounded-lg overflow-hidden cursor-crosshair border border-[rgb(40,40,55)] select-none"
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          <img
+            src={bannerUrl}
+            alt=""
+            className="w-full h-full object-cover pointer-events-none"
+            style={{ objectPosition: value }}
+            draggable={false}
+          />
+          {/* guide lines */}
+          <div className="absolute top-0 bottom-0 w-px bg-white/50 pointer-events-none" style={{ left: `${pos.x}%` }} />
+          <div className="absolute left-0 right-0 h-px bg-white/50 pointer-events-none" style={{ top: `${pos.y}%` }} />
+          {/* crosshair dot */}
+          <div
+            className="absolute w-5 h-5 rounded-full border-2 border-white bg-white/25 shadow-lg ring-1 ring-black/40 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+          />
+          <div className="absolute bottom-1 right-1.5 text-[9px] text-white/50 font-mono pointer-events-none">
+            {Math.round(pos.x)}% · {Math.round(pos.y)}%
+          </div>
         </div>
       </div>
-      {/* Also expose Y-only slider for fine control */}
+
+      {/* ── Full community-header preview ── */}
+      <div className="rounded-xl overflow-hidden border border-[rgb(40,40,55)] bg-[rgb(10,10,16)]">
+        <p className="text-[10px] text-[rgb(80,80,100)] px-3 pt-2 pb-1">Page preview</p>
+        {/* banner at actual proportional height */}
+        <div className="relative h-16 overflow-hidden">
+          <img
+            src={bannerUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            style={{ objectPosition: value }}
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgb(10,10,15)] to-transparent" />
+        </div>
+        {/* community header row */}
+        <div className="flex items-end gap-2 px-3 pb-3 -mt-6">
+          <div className="w-12 h-12 rounded-xl border-4 border-[rgb(10,10,16)] bg-gradient-to-br from-purple-600 to-indigo-600 overflow-hidden shrink-0 shadow-lg">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="w-full h-full object-cover" draggable={false} />
+            ) : null}
+          </div>
+          <div className="pb-1 space-y-1.5 flex-1">
+            <div className="h-2.5 w-24 bg-[rgb(40,40,55)] rounded-full" />
+            <div className="h-1.5 w-14 bg-[rgb(30,30,40)] rounded-full" />
+          </div>
+          <div className="pb-1 flex gap-1">
+            <div className="h-5 w-12 bg-purple-600/40 rounded-full" />
+            <div className="h-5 w-12 bg-[rgb(30,30,40)] rounded-full" />
+          </div>
+        </div>
+      </div>
+
+      {/* vertical fine-tune slider */}
       <div className="flex items-center gap-3">
-        <span className="text-xs text-[rgb(130,130,150)] w-16">Vertical</span>
+        <span className="text-xs text-[rgb(130,130,150)] w-16 shrink-0">Vertical</span>
         <input
-          type="range"
-          min={0}
-          max={100}
-          value={pos.y}
-          onChange={(e) =>
-            onChange(`${Math.round(pos.x)}% ${Number(e.target.value)}%`)
-          }
+          type="range" min={0} max={100} value={pos.y}
+          onChange={(e) => onChange(`${Math.round(pos.x)}% ${Number(e.target.value)}%`)}
           className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
         />
         <span className="text-xs text-[rgb(130,130,150)] w-8 text-right">{Math.round(pos.y)}%</span>
