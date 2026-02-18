@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
     const campaigns = await prisma.allowlistCampaign.findMany({
       where: {
         status: "ACTIVE",
-        filledSpots: { lt: prisma.allowlistCampaign.fields.totalSpots },
       },
       include: {
         community: { select: { id: true, name: true, slug: true, chain: true } },
