@@ -67,7 +67,7 @@ export default function NotificationsPage() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <Bell className="w-6 h-6 text-purple-400" />
-                <h1 className="text-2xl font-bold text-white">Notifications</h1>
+                <h1 className="text-4xl font-black text-white">Notifications</h1>
                 {unreadCount > 0 && (
                   <Badge variant="live">{unreadCount} new</Badge>
                 )}

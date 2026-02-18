@@ -117,8 +117,8 @@ export default function AgentPage() {
           <DashboardSidebar />
           <main className="flex-1 min-w-0 max-w-3xl">
             <div className="flex items-center gap-3 mb-8">
-              <Bot className="w-6 h-6 text-purple-400" />
-              <h1 className="text-2xl font-bold text-white">My OpenClaw Agent</h1>
+              <Bot className="w-7 h-7 text-purple-400" />
+              <h1 className="text-3xl font-bold text-white">My OpenClaw Agent</h1>
               <Badge variant="secondary">1 per account</Badge>
             </div>
 
@@ -130,14 +130,14 @@ export default function AgentPage() {
               /* Registration form */
               <div className="space-y-6">
                 <Card className="border-purple-500/30 bg-purple-600/10">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-purple-600/30 flex items-center justify-center shrink-0">
-                        <Bot className="w-6 h-6 text-purple-400" />
+                  <CardContent className="p-7">
+                    <div className="flex items-start gap-5 mb-5">
+                      <div className="w-16 h-16 rounded-2xl bg-purple-600/30 flex items-center justify-center shrink-0">
+                        <Bot className="w-8 h-8 text-purple-400" />
                       </div>
                       <div>
-                        <h2 className="text-white font-semibold mb-1">Register Your OpenClaw Agent</h2>
-                        <p className="text-sm text-[rgb(130,130,150)] leading-relaxed">
+                        <h2 className="text-lg text-white font-bold mb-2">Register Your OpenClaw Agent</h2>
+                        <p className="text-base text-[rgb(130,130,150)] leading-relaxed">
                           Connect your OpenClaw (formerly Moltbot) agent to Communiclaw. Your agent gets
                           a unique API key to auto-enter giveaways, browse allowlists, and discover
                           communities on your behalf — 24/7.
@@ -145,7 +145,7 @@ export default function AgentPage() {
                       </div>
                     </div>
 
-                    <ul className="grid grid-cols-2 gap-2 mb-6">
+                    <ul className="grid grid-cols-2 gap-3 mb-2">
                       {[
                         "Auto-enter eligible giveaways",
                         "Submit wallet to allowlists",
@@ -154,8 +154,8 @@ export default function AgentPage() {
                         "Full activity log",
                         "Rate limited (100 req/min)",
                       ].map((f) => (
-                        <li key={f} className="flex items-center gap-2 text-sm text-[rgb(200,200,210)]">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                        <li key={f} className="flex items-center gap-2 text-base text-[rgb(200,200,210)]">
+                          <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
                           {f}
                         </li>
                       ))}
@@ -165,12 +165,12 @@ export default function AgentPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Register Agent</CardTitle>
+                    <CardTitle className="text-lg">Register Agent</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={registerAgent} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-[rgb(200,200,210)] mb-1.5">
+                        <label className="block text-base font-medium text-[rgb(200,200,210)] mb-1.5">
                           Agent Name
                         </label>
                         <Input
@@ -179,7 +179,7 @@ export default function AgentPage() {
                           value={agentName}
                           onChange={(e) => setAgentName(e.target.value)}
                         />
-                        <p className="text-xs text-[rgb(130,130,150)] mt-1.5">
+                        <p className="text-sm text-[rgb(130,130,150)] mt-1.5">
                           A label to identify this agent in your activity log.
                         </p>
                       </div>
@@ -200,19 +200,19 @@ export default function AgentPage() {
               <div className="space-y-6">
                 {/* Agent card */}
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-7">
                     <div className="flex items-start justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                          <Bot className="w-6 h-6 text-white" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                          <Bot className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                          <h2 className="text-white font-semibold text-lg">{agent.agentName}</h2>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <h2 className="text-white font-bold text-xl">{agent.agentName}</h2>
+                          <div className="flex items-center gap-2 mt-1">
                             <Badge variant={agent.isActive ? "success" : "secondary"}>
                               {agent.isActive ? "Active" : "Paused"}
                             </Badge>
-                            <span className="text-xs text-[rgb(130,130,150)]">
+                            <span className="text-sm text-[rgb(130,130,150)]">
                               {agent.requestCount.toLocaleString()} requests made
                             </span>
                           </div>
@@ -235,13 +235,13 @@ export default function AgentPage() {
                     </div>
 
                     {/* API Key */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-[rgb(200,200,210)] mb-2 flex items-center gap-2">
-                        <Key className="w-3.5 h-3.5" />
+                    <div className="mb-5">
+                      <label className="block text-base font-semibold text-[rgb(200,200,210)] mb-2 flex items-center gap-2">
+                        <Key className="w-4 h-4" />
                         API Key
                       </label>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 px-3 py-2.5 rounded-lg bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-sm font-mono text-[rgb(200,200,210)] truncate">
+                        <code className="flex-1 px-4 py-3 rounded-lg bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-base font-mono text-[rgb(200,200,210)] truncate">
                           {showKey ? agent.apiKey : maskedKey}
                         </code>
                         <Button
@@ -265,20 +265,20 @@ export default function AgentPage() {
                           )}
                         </Button>
                       </div>
-                      <p className="text-xs text-[rgb(130,130,150)] mt-1.5">
+                      <p className="text-sm text-[rgb(130,130,150)] mt-2">
                         Add this key to your OpenClaw config as{" "}
                         <code className="text-purple-400">X-Agent-Key</code> header.
                       </p>
                     </div>
 
                     {/* Permissions */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-[rgb(200,200,210)] mb-2">
+                    <div className="mb-5">
+                      <label className="block text-base font-semibold text-[rgb(200,200,210)] mb-2">
                         Permissions
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {agent.permissions.map((p) => (
-                          <Badge key={p} variant="secondary" className="text-xs">
+                          <Badge key={p} variant="secondary" className="text-sm">
                             {p.replace(/_/g, " ")}
                           </Badge>
                         ))}
@@ -295,7 +295,7 @@ export default function AgentPage() {
                         <RefreshCw className="w-3.5 h-3.5" />
                         Regenerate Key
                       </Button>
-                      <div className="flex items-center gap-1 text-xs text-[rgb(130,130,150)] ml-2">
+                      <div className="flex items-center gap-1 text-sm text-[rgb(130,130,150)] ml-2">
                         <AlertTriangle className="w-3.5 h-3.5" />
                         Invalidates current key immediately
                       </div>
@@ -306,10 +306,10 @@ export default function AgentPage() {
                 {/* OpenClaw config snippet */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">OpenClaw Skill Config</CardTitle>
+                    <CardTitle className="text-base">OpenClaw Skill Config</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <pre className="p-4 rounded-lg bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-xs font-mono text-[rgb(200,200,210)] overflow-x-auto leading-relaxed">
+                    <pre className="p-5 rounded-lg bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-sm font-mono text-[rgb(200,200,210)] overflow-x-auto leading-relaxed">
 {`# Add to your OpenClaw skills config:
 name: communiclaw
 description: Auto-enter giveaways and allowlists on Communiclaw
@@ -326,25 +326,25 @@ base_url: ${typeof window !== "undefined" ? window.location.origin : (process.en
                 {agent.activity && agent.activity.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <Activity className="w-4 h-4 text-purple-400" />
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Activity className="w-5 h-5 text-purple-400" />
                         Recent Activity
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {agent.activity.slice(0, 10).map((a) => (
                           <div
                             key={a.id}
-                            className="flex items-center justify-between text-sm"
+                            className="flex items-center justify-between text-base"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                              <div className="w-2 h-2 rounded-full bg-purple-400" />
                               <span className="text-[rgb(200,200,210)]">
                                 {a.action.replace(/_/g, " ").toLowerCase()}
                               </span>
                             </div>
-                            <span className="text-xs text-[rgb(130,130,150)]">
+                            <span className="text-sm text-[rgb(130,130,150)]">
                               {new Date(a.createdAt).toLocaleString()}
                             </span>
                           </div>

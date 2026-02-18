@@ -115,7 +115,7 @@ function SubscriptionContent() {
           <main className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-8">
               <CreditCard className="w-6 h-6 text-purple-400" />
-              <h1 className="text-2xl font-bold text-white">Subscription</h1>
+              <h1 className="text-4xl font-black text-white">Subscription</h1>
               <Badge variant={currentPlan === "FREE" ? "secondary" : "default"}>
                 {currentPlan}
               </Badge>
@@ -138,7 +138,7 @@ function SubscriptionContent() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-white mb-1">{currentPlan}</div>
+                    <div className="text-3xl font-black text-white mb-1">{currentPlan}</div>
                     <div className="text-sm text-[rgb(130,130,150)]">
                       {currentPlan === "FREE"
                         ? "Upgrade to unlock more features"
@@ -193,7 +193,7 @@ function SubscriptionContent() {
                       )}
                     </div>
                     <div className="flex items-end gap-1 mb-4">
-                      <span className="text-3xl font-extrabold text-white">{plan.price}</span>
+                      <span className="text-5xl font-black text-white">{plan.price}</span>
                       <span className="text-[rgb(130,130,150)] pb-0.5 text-sm">/{plan.period}</span>
                     </div>
 
