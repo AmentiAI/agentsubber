@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       (
         await prisma.allowlistEntry.findMany({
           where: {
-            campaignId: { in: openCampaigns.map((c) => c.id) },
+            campaignId: { in: openCampaigns.map((c: (typeof openCampaigns)[number]) => c.id) },
             walletAddress: { in: userWallets.length > 0 ? userWallets : ["none"] },
           },
           select: { campaignId: true },
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ).map((e) => e.campaignId)
     );
 
-    const result = openCampaigns.map((c) => ({
+    const result = openCampaigns.map((c: (typeof openCampaigns)[number]) => ({
       ...c,
       spotsRemaining: c.totalSpots - c.filledSpots,
       alreadyEntered: enteredIds.has(c.id),
