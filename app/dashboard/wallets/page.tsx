@@ -326,30 +326,30 @@ export default function WalletsPage() {
       <div className="flex min-h-[calc(100vh-64px)]">
         <DashboardSidebar />
         <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-24 lg:pb-10">
-          <div className="max-w-2xl">
+          <div className="w-full max-w-5xl mx-auto">
 
             <div className="flex items-center gap-3 mb-8">
               <Wallet className="w-8 h-8 text-purple-400" />
-              <h1 className="text-2xl sm:text-4xl font-black text-white">My Wallets</h1>
+              <h1 className="text-3xl sm:text-5xl font-black text-white">My Wallets</h1>
             </div>
 
             {/* Add wallet buttons */}
-            <div className="grid grid-cols-2 gap-5 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
               <button
                 onClick={() => openModal("sol")}
-                className="group p-7 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-purple-500 bg-[rgb(14,14,22)] hover:bg-purple-600/10 transition-all text-left"
+                className="group p-8 sm:p-10 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-purple-500 bg-[rgb(14,14,22)] hover:bg-purple-600/10 transition-all text-left w-full"
               >
-                <div className="text-3xl mb-3">◎</div>
-                <div className="text-lg font-bold text-white mb-1">Connect Solana</div>
-                <div className="text-sm text-[rgb(130,130,150)]">Phantom, Solflare, Backpack</div>
+                <div className="text-4xl mb-4">◎</div>
+                <div className="text-xl font-bold text-white mb-1">Connect Solana</div>
+                <div className="text-base text-[rgb(130,130,150)]">Phantom, Solflare, Backpack</div>
               </button>
               <button
                 onClick={() => openModal("btc")}
-                className="group p-7 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-orange-500 bg-[rgb(14,14,22)] hover:bg-orange-600/10 transition-all text-left"
+                className="group p-8 sm:p-10 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-orange-500 bg-[rgb(14,14,22)] hover:bg-orange-600/10 transition-all text-left w-full"
               >
-                <div className="text-3xl mb-3">₿</div>
-                <div className="text-lg font-bold text-white mb-1">Connect Bitcoin</div>
-                <div className="text-sm text-[rgb(130,130,150)]">Unisat, Xverse, Leather</div>
+                <div className="text-4xl mb-4">₿</div>
+                <div className="text-xl font-bold text-white mb-1">Connect Bitcoin</div>
+                <div className="text-base text-[rgb(130,130,150)]">Unisat, Xverse, Leather</div>
               </button>
             </div>
 
@@ -361,7 +361,7 @@ export default function WalletsPage() {
             ) : wallets.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-20 h-20 rounded-2xl bg-[rgb(30,30,40)] flex items-center justify-center mx-auto mb-5">
-                  <Wallet className="w-10 h-10 text-[rgb(130,130,150)]" />
+                  <Wallet className="w-14 h-14 text-[rgb(130,130,150)]" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">No wallets connected</h3>
                 <p className="text-base text-[rgb(130,130,150)]">
@@ -372,7 +372,7 @@ export default function WalletsPage() {
               <div className="space-y-4">
                 {wallets.map((wallet) => (
                   <Card key={wallet.id}>
-                    <CardContent className="p-5">
+                    <CardContent className="p-6 sm:p-7">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-4 min-w-0">
                           <div className={`w-12 h-12 rounded-xl bg-[rgb(22,22,30)] flex items-center justify-center shrink-0 text-2xl`}>
@@ -380,7 +380,7 @@ export default function WalletsPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <code className="text-base text-white font-mono">
+                              <code className="text-base sm:text-lg text-white font-mono">
                                 {truncateAddress(wallet.address, 8)}
                               </code>
                               <Badge variant={chainBadgeVariants[wallet.chain]} className="text-xs py-0">
@@ -400,7 +400,7 @@ export default function WalletsPage() {
                               )}
                             </div>
                             {wallet.label && (
-                              <div className="text-sm text-[rgb(130,130,150)]">{wallet.label}</div>
+                              <div className="text-base text-[rgb(130,130,150)]">{wallet.label}</div>
                             )}
                           </div>
                         </div>
