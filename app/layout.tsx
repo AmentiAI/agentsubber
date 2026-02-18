@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import dynamic from "next/dynamic";
+import GlobalChatLoader from "@/components/chat/GlobalChatLoader";
 import "./globals.css";
 import Providers from "./providers";
 import PusherBeamsInit from "@/components/PusherBeamsInit";
 
-const GlobalChat = dynamic(() => import("@/components/chat/GlobalChat"), { ssr: false });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +46,7 @@ export default function RootLayout({
       >
         <Providers>
           {children}
-          <GlobalChat />
+          <GlobalChatLoader />
         </Providers>
         <PusherBeamsInit />
         <Script
