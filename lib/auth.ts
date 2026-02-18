@@ -5,6 +5,18 @@ import { prisma } from "./prisma";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
+  debug: process.env.NODE_ENV !== "production",
+  events: {
+    async createUser({ user }) {
+      console.log("[NextAuth] Created user:", user.id);
+    },
+    async linkAccount({ user, account }) {
+      console.log("[NextAuth] Linked account:", account.provider, "to user:", user.id);
+    },
+    async signIn({ user, account }) {
+      console.log("[NextAuth] Sign in:", user.id, account?.provider);
+    },
+  },
   providers: [
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
