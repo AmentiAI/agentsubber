@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/layout/Navbar";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,19 +9,45 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Wallet,
-  Plus,
   Copy,
   Trash2,
   CheckCircle,
   Loader2,
   Star,
   ShieldCheck,
+  Zap,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 // @ts-ignore
 import bs58 from "bs58";
+
+declare global {
+  interface Window {
+    unisat?: {
+      requestAccounts(): Promise<string[]>;
+      getAccounts(): Promise<string[]>;
+      signMessage(msg: string, type?: string): Promise<string>;
+    };
+    XverseProviders?: {
+      BitcoinProvider?: {
+        request(method: string, params?: any): Promise<any>;
+      };
+    };
+    LeatherProvider?: {
+      request(method: string, params?: any): Promise<any>;
+    };
+    magicEden?: {
+      bitcoin?: {
+        connect(): Promise<{ ordinalAddress: string; paymentAddress: string }>;
+        signMessage(address: string, message: string): Promise<{ signature: string }>;
+      };
+    };
+  }
+}
 
 interface WalletRecord {
   id: string;
@@ -33,16 +59,99 @@ interface WalletRecord {
   createdAt: string;
 }
 
+// ─── detect available BTC wallets ───
+function detectBtcWallets() {
+  const found: string[] = [];
+  if (typeof window === "undefined") return found;
+  if (window.unisat) found.push("unisat");
+  if (window.XverseProviders?.BitcoinProvider) found.push("xverse");
+  if (window.LeatherProvider) found.push("leather");
+  if (window.magicEden?.bitcoin) found.push("magiceden");
+  return found;
+}
+
+// ─── BTC wallet connector ───
+async function connectBtcWallet(provider: string): Promise<{ address: string }> {
+  if (provider === "unisat") {
+    const accounts = await window.unisat!.requestAccounts();
+    if (!accounts[0]) throw new Error("No account returned");
+    return { address: accounts[0] };
+  }
+  if (provider === "xverse") {
+    const resp = await window.XverseProviders!.BitcoinProvider!.request("getAccounts", {
+      purposes: ["payment", "ordinals"],
+    });
+    const addresses: any[] = resp?.result?.addresses ?? [];
+    const addr =
+      addresses.find((a: any) => a.purpose === "payment")?.address ??
+      addresses[0]?.address;
+    if (!addr) throw new Error("No address returned");
+    return { address: addr };
+  }
+  if (provider === "leather") {
+    const resp = await window.LeatherProvider!.request("getAddresses");
+    const addresses: any[] = resp?.result?.addresses ?? [];
+    const addr = addresses.find((a: any) => a.type === "p2wpkh")?.address ?? addresses[0]?.address;
+    if (!addr) throw new Error("No address returned");
+    return { address: addr };
+  }
+  if (provider === "magiceden") {
+    const resp = await window.magicEden!.bitcoin!.connect();
+    return { address: resp.paymentAddress };
+  }
+  throw new Error("Unknown provider");
+}
+
+async function signBtcMessage(provider: string, address: string, message: string): Promise<string> {
+  if (provider === "unisat") {
+    return window.unisat!.signMessage(message, "ecdsa");
+  }
+  if (provider === "xverse") {
+    const resp = await window.XverseProviders!.BitcoinProvider!.request("signMessage", { address, message });
+    return resp?.result?.signature ?? resp?.result;
+  }
+  if (provider === "leather") {
+    const resp = await window.LeatherProvider!.request("signMessage", {
+      message,
+      paymentType: "p2wpkh",
+    });
+    return resp?.result?.signature ?? resp?.result;
+  }
+  if (provider === "magiceden") {
+    const resp = await window.magicEden!.bitcoin!.signMessage(address, message);
+    return resp.signature;
+  }
+  throw new Error("Unknown provider");
+}
+
+const BTC_WALLETS: { id: string; name: string; icon: string }[] = [
+  { id: "unisat", name: "Unisat", icon: "🟠" },
+  { id: "xverse", name: "Xverse", icon: "🔵" },
+  { id: "leather", name: "Leather", icon: "🟤" },
+  { id: "magiceden", name: "Magic Eden", icon: "🟣" },
+];
+
+const chainColors: Record<string, string> = {
+  SOL: "text-purple-400",
+  BTC: "text-orange-400",
+};
+const chainBadgeVariants: Record<string, any> = {
+  SOL: "sol",
+  BTC: "btc",
+};
+
 export default function WalletsPage() {
   const [wallets, setWallets] = useState<WalletRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [form, setForm] = useState({ address: "", chain: "SOL", label: "" });
-  const [error, setError] = useState("");
-  const [verifying, setVerifying] = useState<string | null>(null);
-  const [verifyMsg, setVerifyMsg] = useState<{ id: string; type: "success" | "error"; text: string } | null>(null);
+
+  // Connect modal state
+  const [modal, setModal] = useState<null | "sol" | "btc">(null);
+  const [modalLabel, setModalLabel] = useState("");
+  const [modalStatus, setModalStatus] = useState<{ type: "idle" | "connecting" | "signing" | "saving" | "success" | "error"; text?: string }>({ type: "idle" });
+  const [detectedBtcWallets, setDetectedBtcWallets] = useState<string[]>([]);
+  const [btcProvider, setBtcProvider] = useState<string | null>(null);
+  const [pendingBtcAddress, setPendingBtcAddress] = useState("");
 
   const solWallet = useWallet();
 
@@ -53,34 +162,128 @@ export default function WalletsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  function copyAddress(wallet: WalletRecord) {
-    navigator.clipboard.writeText(wallet.address);
-    setCopiedId(wallet.id);
-    setTimeout(() => setCopiedId(null), 2000);
+  // Detect BTC wallets when modal opens
+  useEffect(() => {
+    if (modal === "btc") {
+      setDetectedBtcWallets(detectBtcWallets());
+    }
+  }, [modal]);
+
+  function openModal(chain: "sol" | "btc") {
+    setModal(chain);
+    setModalLabel("");
+    setModalStatus({ type: "idle" });
+    setBtcProvider(null);
+    setPendingBtcAddress("");
+  }
+  function closeModal() {
+    setModal(null);
+    setModalStatus({ type: "idle" });
   }
 
-  async function addWallet(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setAdding(true);
+  // ─── SOL: connect + sign + save in one flow ───
+  const doSolConnect = useCallback(async () => {
+    if (!solWallet.connected || !solWallet.publicKey) {
+      setModalStatus({ type: "error", text: "Connect your Solana wallet first using the button above." });
+      return;
+    }
+    if (!solWallet.signMessage) {
+      setModalStatus({ type: "error", text: "Your wallet does not support message signing." });
+      return;
+    }
+    const address = solWallet.publicKey.toBase58();
+
+    // Check duplicate
+    if (wallets.some((w) => w.address === address)) {
+      setModalStatus({ type: "error", text: "This wallet is already added." });
+      return;
+    }
+
+    setModalStatus({ type: "signing", text: "Please approve the signing request in your wallet…" });
     try {
-      const res = await fetch("/api/wallets", {
+      const challengeRes = await fetch("/api/wallets/challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ address }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to add wallet");
+      const { message } = await challengeRes.json();
+
+      const msgBytes = new TextEncoder().encode(message);
+      const sigBytes = await solWallet.signMessage(msgBytes);
+      const signature = bs58.encode(sigBytes);
+
+      setModalStatus({ type: "saving" });
+      // Add wallet
+      const addRes = await fetch("/api/wallets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, chain: "SOL", label: modalLabel }),
+      });
+      const addData = await addRes.json();
+      if (!addRes.ok) throw new Error(addData.error ?? "Failed to add wallet");
+
+      // Verify immediately
+      await fetch("/api/wallets/verify-sig", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletId: addData.wallet.id, address, message, signature, chain: "SOL" }),
+      });
+
+      setWallets((prev) => [...prev, { ...addData.wallet, verified: true }]);
+      setModalStatus({ type: "success", text: "Wallet connected & verified!" });
+      setTimeout(closeModal, 1500);
+    } catch (err: any) {
+      setModalStatus({ type: "error", text: err?.message ?? "Signing cancelled" });
+    }
+  }, [solWallet, wallets, modalLabel]);
+
+  // ─── BTC: select provider → connect → sign → save ───
+  const doBtcConnect = useCallback(async (provider: string) => {
+    setBtcProvider(provider);
+    setModalStatus({ type: "connecting", text: "Connecting to wallet…" });
+    try {
+      const { address } = await connectBtcWallet(provider);
+      setPendingBtcAddress(address);
+
+      if (wallets.some((w) => w.address === address)) {
+        setModalStatus({ type: "error", text: "This wallet is already added." });
         return;
       }
-      setWallets((prev) => [...prev, data.wallet]);
-      setShowForm(false);
-      setForm({ address: "", chain: "SOL", label: "" });
-    } finally {
-      setAdding(false);
+
+      setModalStatus({ type: "signing", text: "Please approve the signing request in your wallet…" });
+
+      const challengeRes = await fetch("/api/wallets/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      });
+      const { message } = await challengeRes.json();
+
+      const signature = await signBtcMessage(provider, address, message);
+
+      setModalStatus({ type: "saving" });
+      const addRes = await fetch("/api/wallets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, chain: "BTC", label: modalLabel }),
+      });
+      const addData = await addRes.json();
+      if (!addRes.ok) throw new Error(addData.error ?? "Failed to add wallet");
+
+      await fetch("/api/wallets/verify-sig", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletId: addData.wallet.id, address, message, signature, chain: "BTC" }),
+      });
+
+      setWallets((prev) => [...prev, { ...addData.wallet, verified: true }]);
+      setModalStatus({ type: "success", text: "Bitcoin wallet connected & verified!" });
+      setTimeout(closeModal, 1500);
+    } catch (err: any) {
+      setModalStatus({ type: "error", text: err?.message ?? "Connection failed" });
+      setBtcProvider(null);
     }
-  }
+  }, [wallets, modalLabel]);
 
   async function removeWallet(walletId: string) {
     if (!confirm("Remove this wallet?")) return;
@@ -89,9 +292,7 @@ export default function WalletsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ walletId }),
     });
-    if (res.ok) {
-      setWallets((prev) => prev.filter((w) => w.id !== walletId));
-    }
+    if (res.ok) setWallets((prev) => prev.filter((w) => w.id !== walletId));
   }
 
   async function setPrimary(walletId: string) {
@@ -100,177 +301,51 @@ export default function WalletsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ walletId }),
     });
-    if (res.ok) {
-      setWallets((prev) =>
-        prev.map((w) => ({ ...w, isPrimary: w.id === walletId }))
-      );
-    }
+    if (res.ok) setWallets((prev) => prev.map((w) => ({ ...w, isPrimary: w.id === walletId })));
   }
 
-  async function verifySOLWallet(wallet: WalletRecord) {
-    if (!solWallet.signMessage) {
-      setVerifyMsg({ id: wallet.id, type: "error", text: "Wallet does not support message signing. Please connect a compatible Solana wallet." });
-      return;
-    }
-    if (!solWallet.connected || solWallet.publicKey?.toBase58() !== wallet.address) {
-      setVerifyMsg({ id: wallet.id, type: "error", text: `Please connect the wallet with address ${truncateAddress(wallet.address, 6)} using the Connect button above.` });
-      return;
-    }
-    setVerifying(wallet.id);
-    setVerifyMsg(null);
-    try {
-      // 1. Get challenge
-      const challengeRes = await fetch("/api/wallets/challenge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: wallet.address }),
-      });
-      const { message } = await challengeRes.json();
-
-      // 2. Sign the message
-      const msgBytes = new TextEncoder().encode(message);
-      const sigBytes = await solWallet.signMessage(msgBytes);
-      const signature = bs58.encode(sigBytes);
-
-      // 3. Verify signature on server
-      const verifyRes = await fetch("/api/wallets/verify-sig", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletId: wallet.id, address: wallet.address, message, signature, chain: "SOL" }),
-      });
-      const verifyData = await verifyRes.json();
-
-      if (verifyRes.ok && verifyData.success) {
-        setWallets((prev) => prev.map((w) => w.id === wallet.id ? { ...w, verified: true } : w));
-        setVerifyMsg({ id: wallet.id, type: "success", text: "✓ Wallet verified successfully!" });
-      } else {
-        setVerifyMsg({ id: wallet.id, type: "error", text: verifyData.error ?? "Verification failed" });
-      }
-    } catch (err: any) {
-      setVerifyMsg({ id: wallet.id, type: "error", text: err?.message ?? "Signing cancelled or failed" });
-    } finally {
-      setVerifying(null);
-    }
+  function copyAddress(wallet: WalletRecord) {
+    navigator.clipboard.writeText(wallet.address);
+    setCopiedId(wallet.id);
+    setTimeout(() => setCopiedId(null), 2000);
   }
 
-  const chainColors: Record<string, string> = {
-    SOL: "text-purple-400",
-    BTC: "text-orange-400",
-    ETH: "text-blue-400",
-  };
-  const chainBadgeVariants: Record<string, any> = {
-    SOL: "sol",
-    BTC: "btc",
-    ETH: "default",
-  };
+  const isBusy = ["connecting", "signing", "saving", "success"].includes(modalStatus.type);
 
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="w-full px-8 py-10">
-        <div className="flex gap-8">
-          <DashboardSidebar />
-          <main className="flex-1 min-w-0 max-w-2xl">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <Wallet className="w-8 h-8 text-purple-400" />
-                <h1 className="text-4xl font-black text-white">My Wallets</h1>
-              </div>
-              <Button
-                variant="gradient"
-                className="gap-2"
-                onClick={() => setShowForm(!showForm)}
+      <div className="flex">
+        <DashboardSidebar />
+        <main className="flex-1 min-w-0 px-10 py-10">
+          <div className="max-w-2xl">
+
+            <div className="flex items-center gap-3 mb-8">
+              <Wallet className="w-8 h-8 text-purple-400" />
+              <h1 className="text-4xl font-black text-white">My Wallets</h1>
+            </div>
+
+            {/* Add wallet buttons */}
+            <div className="grid grid-cols-2 gap-5 mb-10">
+              <button
+                onClick={() => openModal("sol")}
+                className="group p-7 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-purple-500 bg-[rgb(14,14,22)] hover:bg-purple-600/10 transition-all text-left"
               >
-                <Plus className="w-4 h-4" />
-                Add Wallet
-              </Button>
+                <div className="text-3xl mb-3">◎</div>
+                <div className="text-lg font-bold text-white mb-1">Connect Solana</div>
+                <div className="text-sm text-[rgb(130,130,150)]">Phantom, Solflare, Backpack</div>
+              </button>
+              <button
+                onClick={() => openModal("btc")}
+                className="group p-7 rounded-2xl border-2 border-dashed border-[rgb(60,60,80)] hover:border-orange-500 bg-[rgb(14,14,22)] hover:bg-orange-600/10 transition-all text-left"
+              >
+                <div className="text-3xl mb-3">₿</div>
+                <div className="text-lg font-bold text-white mb-1">Connect Bitcoin</div>
+                <div className="text-sm text-[rgb(130,130,150)]">Unisat, Xverse, Leather</div>
+              </button>
             </div>
 
-            {/* Solana Wallet Connect */}
-            <div className="mb-5 p-4 rounded-xl bg-[rgb(20,20,28)] border border-[rgb(40,40,55)] flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-white mb-0.5">Connect Solana Wallet</div>
-                <div className="text-xs text-[rgb(130,130,150)]">Connect to sign & verify ownership of your Solana wallets</div>
-              </div>
-              <WalletMultiButton style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)", borderRadius: "10px", fontSize: "13px", height: "38px" }} />
-            </div>
-
-            {showForm && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Add Wallet</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={addWallet} className="space-y-4">
-                    <div>
-                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
-                        Chain
-                      </label>
-                      <div className="flex gap-2">
-                        {["SOL", "BTC"].map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setForm((f) => ({ ...f, chain: c }))}
-                            className={`px-4 py-2 rounded-lg border text-base font-medium transition-all ${
-                              form.chain === c
-                                ? "border-purple-500 bg-purple-600/10"
-                                : "border-[rgb(40,40,55)] hover:border-[rgb(80,80,100)]"
-                            } ${chainColors[c]}`}
-                          >
-                            {c === "SOL" ? "◎ Solana" : "₿ Bitcoin"}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
-                        Wallet Address *
-                      </label>
-                      <Input
-                        required
-                        placeholder={
-                          form.chain === "SOL"
-                            ? "e.g. 7xKXtg2CW8..."
-                            : "e.g. bc1q..."
-                        }
-                        value={form.address}
-                        onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
-                        Label (optional)
-                      </label>
-                      <Input
-                        placeholder="e.g. Main wallet"
-                        value={form.label}
-                        onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-                      />
-                    </div>
-                    {error && (
-                      <div className="text-sm text-red-400 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                        {error}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" variant="gradient" disabled={adding}>
-                        {adding ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Add Wallet"
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
-
+            {/* Wallet list */}
             {loading ? (
               <div className="flex justify-center py-16">
                 <Loader2 className="w-7 h-7 animate-spin text-purple-400" />
@@ -280,9 +355,9 @@ export default function WalletsPage() {
                 <div className="w-20 h-20 rounded-2xl bg-[rgb(30,30,40)] flex items-center justify-center mx-auto mb-5">
                   <Wallet className="w-10 h-10 text-[rgb(130,130,150)]" />
                 </div>
-                <h3 className="text-xl text-white font-bold mb-2">No wallets connected</h3>
-                <p className="text-[rgb(130,130,150)] text-base">
-                  Add a Solana or Bitcoin wallet to enter giveaways and allowlists.
+                <h3 className="text-xl font-bold text-white mb-2">No wallets connected</h3>
+                <p className="text-base text-[rgb(130,130,150)]">
+                  Connect a Solana or Bitcoin wallet to enter giveaways and allowlists.
                 </p>
               </div>
             ) : (
@@ -292,93 +367,45 @@ export default function WalletsPage() {
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-4 min-w-0">
-                          <div className={`w-12 h-12 rounded-xl bg-[rgb(30,30,40)] flex items-center justify-center shrink-0 text-2xl ${chainColors[wallet.chain]}`}>
+                          <div className={`w-12 h-12 rounded-xl bg-[rgb(22,22,30)] flex items-center justify-center shrink-0 text-2xl`}>
                             {wallet.chain === "SOL" ? "◎" : "₿"}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <code className="text-base text-white font-mono">
-                                {truncateAddress(wallet.address, 6)}
+                                {truncateAddress(wallet.address, 8)}
                               </code>
                               <Badge variant={chainBadgeVariants[wallet.chain]} className="text-xs py-0">
                                 {wallet.chain}
                               </Badge>
                               {wallet.isPrimary && (
                                 <Badge variant="default" className="text-xs py-0 gap-1">
-                                  <Star className="w-2.5 h-2.5" />
-                                  Primary
+                                  <Star className="w-2.5 h-2.5" />Primary
                                 </Badge>
                               )}
                               {wallet.verified ? (
                                 <Badge variant="success" className="text-xs py-0 gap-1">
-                                  <CheckCircle className="w-2.5 h-2.5" />
-                                  Verified
+                                  <CheckCircle className="w-2.5 h-2.5" />Verified
                                 </Badge>
                               ) : (
-                                <Badge variant="secondary" className="text-xs py-0">
-                                  Unverified
-                                </Badge>
+                                <Badge variant="secondary" className="text-xs py-0">Unverified</Badge>
                               )}
                             </div>
                             {wallet.label && (
-                              <div className="text-sm text-[rgb(130,130,150)]">
-                                {wallet.label}
-                              </div>
-                            )}
-                            {/* Verify message */}
-                            {verifyMsg?.id === wallet.id && (
-                              <div className={`text-xs mt-1 ${verifyMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                                {verifyMsg.text}
-                              </div>
+                              <div className="text-sm text-[rgb(130,130,150)]">{wallet.label}</div>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                          {/* SOL verify button */}
-                          {wallet.chain === "SOL" && !wallet.verified && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => verifySOLWallet(wallet)}
-                              disabled={verifying === wallet.id}
-                              className="text-xs gap-1 border-purple-500/40 text-purple-400 hover:bg-purple-500/10"
-                            >
-                              {verifying === wallet.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <ShieldCheck className="w-3 h-3" />
-                              )}
-                              Sign & Verify
-                            </Button>
-                          )}
+                        <div className="flex items-center gap-1 shrink-0">
                           {!wallet.isPrimary && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setPrimary(wallet.id)}
-                              className="text-xs gap-1"
-                            >
-                              <Star className="w-3 h-3" />
-                              Set Primary
+                            <Button variant="ghost" size="sm" onClick={() => setPrimary(wallet.id)} className="text-xs gap-1">
+                              <Star className="w-3 h-3" />Set Primary
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => copyAddress(wallet)}
-                          >
-                            {copiedId === wallet.id ? (
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
+                          <Button variant="ghost" size="icon" onClick={() => copyAddress(wallet)}>
+                            {copiedId === wallet.id ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeWallet(wallet.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => removeWallet(wallet.id)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -388,9 +415,171 @@ export default function WalletsPage() {
                 ))}
               </div>
             )}
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
+
+      {/* ─── CONNECT MODAL ─── */}
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[rgb(14,14,22)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[rgb(30,30,45)]">
+              <h2 className="text-xl font-black text-white">
+                {modal === "sol" ? "◎ Connect Solana" : "₿ Connect Bitcoin"}
+              </h2>
+              <button onClick={closeModal} disabled={isBusy} className="p-2 rounded-lg text-[rgb(100,100,120)] hover:text-white transition-colors disabled:opacity-40">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+
+              {/* Label input — always visible */}
+              <div>
+                <label className="block text-sm font-medium text-[rgb(180,180,200)] mb-2">Label (optional)</label>
+                <Input
+                  placeholder="e.g. Main wallet, Trading, Ordinals..."
+                  value={modalLabel}
+                  onChange={(e) => setModalLabel(e.target.value)}
+                  disabled={isBusy}
+                  className="text-base"
+                />
+              </div>
+
+              {/* ── SOL FLOW ── */}
+              {modal === "sol" && (
+                <div className="space-y-4">
+                  {/* Wallet adapter connect button */}
+                  <div className="flex flex-col items-start gap-2">
+                    <label className="text-sm font-medium text-[rgb(180,180,200)]">Step 1 — Connect</label>
+                    <WalletMultiButton style={{
+                      background: solWallet.connected ? "rgb(22, 80, 50)" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                      borderRadius: "12px", fontSize: "15px", height: "48px", width: "100%", justifyContent: "center",
+                    }} />
+                    {solWallet.connected && (
+                      <div className="text-xs text-green-400 flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        {truncateAddress(solWallet.publicKey?.toBase58() ?? "", 8)}
+                      </div>
+                    )}
+                  </div>
+                  {solWallet.connected && (
+                    <div>
+                      <label className="text-sm font-medium text-[rgb(180,180,200)] mb-2 block">Step 2 — Sign to verify ownership</label>
+                      <Button
+                        variant="gradient"
+                        className="w-full h-12 text-base gap-2"
+                        onClick={doSolConnect}
+                        disabled={isBusy}
+                      >
+                        {modalStatus.type === "signing" ? <Loader2 className="w-5 h-5 animate-spin" /> :
+                         modalStatus.type === "saving" ? <Loader2 className="w-5 h-5 animate-spin" /> :
+                         modalStatus.type === "success" ? <CheckCircle className="w-5 h-5" /> :
+                         <ShieldCheck className="w-5 h-5" />}
+                        {modalStatus.type === "signing" ? "Waiting for signature…" :
+                         modalStatus.type === "saving" ? "Saving…" :
+                         modalStatus.type === "success" ? "Connected!" :
+                         "Sign & Add Wallet"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── BTC FLOW ── */}
+              {modal === "btc" && !btcProvider && (
+                <div>
+                  <label className="text-sm font-medium text-[rgb(180,180,200)] mb-3 block">Choose your Bitcoin wallet</label>
+                  <div className="space-y-2">
+                    {BTC_WALLETS.map((w) => {
+                      const available = detectedBtcWallets.includes(w.id);
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() => available && doBtcConnect(w.id)}
+                          disabled={!available || isBusy}
+                          className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all text-left ${
+                            available
+                              ? "border-[rgb(50,50,70)] hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
+                              : "border-[rgb(35,35,50)] opacity-40 cursor-not-allowed"
+                          }`}
+                        >
+                          <span className="text-2xl">{w.icon}</span>
+                          <div className="flex-1">
+                            <div className="text-base font-semibold text-white">{w.name}</div>
+                            <div className="text-xs text-[rgb(120,120,140)]">
+                              {available ? "Detected — click to connect" : "Not installed"}
+                            </div>
+                          </div>
+                          {available && <Zap className="w-4 h-4 text-orange-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {detectedBtcWallets.length === 0 && (
+                    <div className="mt-4 flex items-start gap-2 p-4 rounded-xl bg-orange-900/20 border border-orange-500/30">
+                      <AlertCircle className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
+                      <p className="text-sm text-orange-300">
+                        No Bitcoin wallet extension detected. Install <strong>Unisat</strong>, <strong>Xverse</strong>, or <strong>Leather</strong> and refresh.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* BTC connecting/signing state */}
+              {modal === "btc" && btcProvider && (
+                <div className="flex flex-col items-center py-6 gap-4">
+                  {modalStatus.type !== "error" && (
+                    <Loader2 className={`w-10 h-10 ${modalStatus.type === "success" ? "hidden" : "animate-spin text-orange-400"}`} />
+                  )}
+                  {modalStatus.type === "success" && <CheckCircle className="w-10 h-10 text-green-400" />}
+                  {modalStatus.type === "error" && <AlertCircle className="w-10 h-10 text-red-400" />}
+                  <div className="text-center">
+                    <div className="text-base font-semibold text-white mb-1">
+                      {modalStatus.type === "connecting" && "Connecting…"}
+                      {modalStatus.type === "signing" && "Sign the message in your wallet"}
+                      {modalStatus.type === "saving" && "Saving wallet…"}
+                      {modalStatus.type === "success" && "Connected!"}
+                      {modalStatus.type === "error" && "Something went wrong"}
+                    </div>
+                    {modalStatus.text && (
+                      <div className={`text-sm ${modalStatus.type === "error" ? "text-red-400" : "text-[rgb(140,140,160)]"}`}>
+                        {modalStatus.text}
+                      </div>
+                    )}
+                    {pendingBtcAddress && modalStatus.type === "signing" && (
+                      <code className="text-xs text-orange-400 mt-1 block">{truncateAddress(pendingBtcAddress, 10)}</code>
+                    )}
+                  </div>
+                  {modalStatus.type === "error" && (
+                    <Button variant="outline" onClick={() => { setBtcProvider(null); setModalStatus({ type: "idle" }); setPendingBtcAddress(""); }}>
+                      Try again
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Status for SOL */}
+              {modal === "sol" && modalStatus.type === "error" && (
+                <div className="flex items-start gap-2 p-4 rounded-xl bg-red-900/20 border border-red-500/30">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300">{modalStatus.text}</p>
+                </div>
+              )}
+              {modal === "sol" && modalStatus.type === "success" && (
+                <div className="flex items-center gap-2 p-4 rounded-xl bg-green-900/20 border border-green-500/30">
+                  <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+                  <p className="text-sm text-green-300">{modalStatus.text}</p>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
