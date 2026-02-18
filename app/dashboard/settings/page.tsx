@@ -76,7 +76,7 @@ export default function SettingsPage() {
           <main className="flex-1 min-w-0 max-w-2xl">
             <div className="flex items-center gap-3 mb-8">
               <Settings className="w-6 h-6 text-purple-400" />
-              <h1 className="text-4xl font-black text-white">Settings</h1>
+              <h1 className="text-2xl sm:text-4xl font-black text-white">Settings</h1>
             </div>
 
             {loading ? (

@@ -133,3 +133,41 @@ body {
 .float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* ─── Mobile / Touch Optimizations ─── */
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  /* Prevent horizontal scroll on mobile */
+}
+
+/* Safe area inset for iPhone home bar */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Better tap targets on mobile */
+@media (max-width: 768px) {
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Dashboard pages need bottom padding for mobile nav */
+  .dashboard-content {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Prevent text zoom on input focus (iOS) */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Scroll momentum on iOS */
+.overflow-y-auto, .overflow-y-scroll {
+  -webkit-overflow-scrolling: touch;
+}

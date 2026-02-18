@@ -1,5 +1,6 @@
 "use client";
 
+import MobileBottomNav from "./MobileBottomNav";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,8 @@ export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
+    <>
+    <MobileBottomNav />
     <aside className="w-72 shrink-0 hidden lg:block border-r border-[rgb(25,25,38)] bg-[rgb(11,11,17)]">
       <div className="sticky top-20 py-4 space-y-1 px-3">
         {navItems.map((item) => {
@@ -62,5 +65,6 @@ export default function DashboardSidebar() {
         })}
       </div>
     </aside>
+    </>
   );
 }

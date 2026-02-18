@@ -88,7 +88,7 @@ export default async function CommunityPage({ params }: PageProps) {
       {/* ── Announcement — full width strip ── */}
       {community.announcementText && (
         <div className="w-full border-b border-[rgb(40,40,55)]" style={{ backgroundColor: `${accent}20`, borderColor: `${accent}40` }}>
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
             <Megaphone className="w-4 h-4 shrink-0" style={{ color: accent }} />
             <p className="text-sm font-medium text-white">{community.announcementText}</p>
           </div>
@@ -112,7 +112,7 @@ export default async function CommunityPage({ params }: PageProps) {
       </div>
 
       {/* ── Community Identity ── */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="-mt-20 mb-8 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
             <div className="flex items-end gap-5">

@@ -31,13 +31,13 @@ export default function PresalesPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="flex">
+      <div className="flex min-h-[calc(100vh-64px)]">
         <DashboardSidebar />
-        <main className="flex-1 min-w-0 px-10 py-10">
-          <div className="flex items-center justify-between mb-8">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-24 lg:pb-10">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
               <ShoppingBag className="w-7 h-7 text-green-400" />
-              <h1 className="text-4xl font-black text-white">Presales</h1>
+              <h1 className="text-2xl sm:text-4xl font-black text-white">Presales</h1>
             </div>
             <Link href="/dashboard/presales/new">
               <Button variant="gradient" className="gap-2">

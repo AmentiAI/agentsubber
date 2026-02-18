@@ -159,7 +159,7 @@ export default function HomePage() {
             Now with OpenClaw AI Agent Support
           </Badge>
 
-          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white leading-tight mb-6">
+          <h1 className="text-4xl sm:text-6xl lg:text-8xl font-black text-white leading-tight mb-6">
             The Web3 Community
             <br />
             <span className="gradient-text">Platform Built to Win</span>

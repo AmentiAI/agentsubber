@@ -109,9 +109,9 @@ export default function GlobalChat() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-3">
       {open && (
-        <div className="w-80 sm:w-96 h-[520px] bg-[rgb(13,13,20)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
+        <div className="w-[calc(100vw-2rem)] sm:w-96 h-[480px] sm:h-[520px] bg-[rgb(13,13,20)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[rgb(35,35,50)] bg-[rgb(18,18,26)]">
             <div className="flex items-center gap-2">

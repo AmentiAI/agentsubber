@@ -64,10 +64,10 @@ export default function NotificationsPage() {
         <div className="flex gap-8">
           <DashboardSidebar />
           <main className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3">
                 <Bell className="w-6 h-6 text-purple-400" />
-                <h1 className="text-4xl font-black text-white">Notifications</h1>
+                <h1 className="text-2xl sm:text-4xl font-black text-white">Notifications</h1>
                 {unreadCount > 0 && (
                   <Badge variant="live">{unreadCount} new</Badge>
                 )}

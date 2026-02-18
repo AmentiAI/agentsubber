@@ -281,14 +281,14 @@ export default function WalletsPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="flex">
+      <div className="flex min-h-[calc(100vh-64px)]">
         <DashboardSidebar />
-        <main className="flex-1 min-w-0 px-10 py-10">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-24 lg:pb-10">
           <div className="max-w-2xl">
 
             <div className="flex items-center gap-3 mb-8">
               <Wallet className="w-8 h-8 text-purple-400" />
-              <h1 className="text-4xl font-black text-white">My Wallets</h1>
+              <h1 className="text-2xl sm:text-4xl font-black text-white">My Wallets</h1>
             </div>
 
             {/* Add wallet buttons */}
@@ -387,8 +387,8 @@ export default function WalletsPage() {
 
       {/* ─── CONNECT MODAL ─── */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[rgb(14,14,22)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full sm:max-w-md bg-[rgb(14,14,22)] border-0 sm:border border-[rgb(40,40,55)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[rgb(30,30,45)]">

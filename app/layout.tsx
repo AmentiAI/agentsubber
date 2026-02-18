@@ -31,6 +31,14 @@ export const metadata: Metadata = {
       "Manage allowlists, run giveaways, launch presales, and power your community with AI agents.",
     type: "website",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+  },
+  themeColor: "#7c3aed",
 };
 
 export default function RootLayout({

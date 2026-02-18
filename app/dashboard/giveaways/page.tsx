@@ -29,7 +29,7 @@ export default function GiveawaysPage() {
           <main className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-10">
               <Gift className="w-8 h-8 text-purple-400" />
-              <h1 className="text-4xl font-black text-white">Active Giveaways</h1>
+              <h1 className="text-2xl sm:text-4xl font-black text-white">Active Giveaways</h1>
             </div>
 
             {loading ? (

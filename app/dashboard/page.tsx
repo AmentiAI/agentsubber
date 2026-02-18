@@ -57,14 +57,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[rgb(10,10,15)]">
       <Navbar />
-      <div className="flex">
+      <div className="flex min-h-[calc(100vh-64px)]">
         <DashboardSidebar />
-        <main className="flex-1 min-w-0 px-10 py-10 space-y-10">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-24 lg:pb-10 space-y-8">
 
           {/* Welcome */}
-          <div className="flex items-start justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-5xl font-black text-white mb-2">Welcome back, {displayName} 👋</h1>
+              <h1 className="text-3xl sm:text-5xl font-black text-white mb-2">Welcome back, {displayName} 👋</h1>
               <p className="text-xl text-[rgb(140,140,165)]">Here&apos;s what&apos;s happening with your communities.</p>
             </div>
             <Badge variant={plan === "FREE" ? "secondary" : "default"} className="gap-1.5 text-sm px-4 py-1.5 mt-2">
@@ -73,7 +73,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
             <StatCard icon={<Users className="w-7 h-7 text-purple-400" />} label="Communities" value={stats?.communities ?? 0} loading={loading} />
             <StatCard icon={<Gift className="w-7 h-7 text-indigo-400" />} label="Active Giveaways" value={stats?.activeGiveaways ?? 0} loading={loading} />
             <StatCard icon={<List className="w-7 h-7 text-cyan-400" />} label="AL Entries" value={stats?.allowlistEntries ?? 0} loading={loading} />
@@ -83,7 +83,7 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <div>
             <h2 className="text-2xl font-black text-white mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
               {QUICK_ACTIONS.map((action) => {
                 const Icon = action.icon;
                 return (
@@ -104,7 +104,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Agent + Wallet */}
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-xl">

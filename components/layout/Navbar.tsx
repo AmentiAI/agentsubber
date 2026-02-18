@@ -92,7 +92,7 @@ export default function Navbar() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm pulse-glow">
               C
             </div>
-            <span className="font-bold text-lg text-white hidden sm:block">
+            <span className="font-bold text-lg text-white">
               Communi<span className="text-purple-400">claw</span>
             </span>
           </Link>
@@ -276,7 +276,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-[rgb(40,40,55)] py-3 space-y-1">
+          <div className="md:hidden border-t border-[rgb(40,40,55)] py-4 px-2 space-y-1">
             <MobileNavItem href="/feed" onClick={() => setMenuOpen(false)}>Feed</MobileNavItem>
             <MobileNavItem href="/discover" onClick={() => setMenuOpen(false)}>Discover</MobileNavItem>
             <MobileNavItem href="/calendar" onClick={() => setMenuOpen(false)}>Calendar</MobileNavItem>
