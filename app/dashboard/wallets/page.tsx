@@ -119,8 +119,8 @@ export default function WalletsPage() {
           <main className="flex-1 min-w-0 max-w-2xl">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <Wallet className="w-6 h-6 text-purple-400" />
-                <h1 className="text-2xl font-bold text-white">My Wallets</h1>
+                <Wallet className="w-8 h-8 text-purple-400" />
+                <h1 className="text-4xl font-black text-white">My Wallets</h1>
               </div>
               <Button
                 variant="gradient"
@@ -132,9 +132,9 @@ export default function WalletsPage() {
               </Button>
             </div>
 
-            <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-yellow-300">
+            <div className="mb-5 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-yellow-300">
                 Paste your wallet address below. On-chain signature verification coming soon.
                 Only verified wallets will be usable for allowlists requiring proof of ownership.
               </p>
@@ -143,12 +143,12 @@ export default function WalletsPage() {
             {showForm && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>Add Wallet</CardTitle>
+                  <CardTitle className="text-lg">Add Wallet</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={addWallet} className="space-y-4">
                     <div>
-                      <label className="block text-sm text-[rgb(200,200,210)] mb-1.5">
+                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
                         Chain
                       </label>
                       <div className="flex gap-2">
@@ -157,7 +157,7 @@ export default function WalletsPage() {
                             key={c}
                             type="button"
                             onClick={() => setForm((f) => ({ ...f, chain: c }))}
-                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                            className={`px-4 py-2 rounded-lg border text-base font-medium transition-all ${
                               form.chain === c
                                 ? "border-purple-500 bg-purple-600/10"
                                 : "border-[rgb(40,40,55)] hover:border-[rgb(80,80,100)]"
@@ -169,7 +169,7 @@ export default function WalletsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm text-[rgb(200,200,210)] mb-1.5">
+                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
                         Wallet Address *
                       </label>
                       <Input
@@ -181,11 +181,11 @@ export default function WalletsPage() {
                         }
                         value={form.address}
                         onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                        className="font-mono"
+                        className="font-mono text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-[rgb(200,200,210)] mb-1.5">
+                      <label className="block text-base text-[rgb(200,200,210)] mb-1.5">
                         Label (optional)
                       </label>
                       <Input
@@ -195,7 +195,7 @@ export default function WalletsPage() {
                       />
                     </div>
                     {error && (
-                      <div className="text-sm text-red-400 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <div className="text-sm text-red-400 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                         {error}
                       </div>
                     )}
@@ -222,25 +222,27 @@ export default function WalletsPage() {
               </div>
             ) : wallets.length === 0 ? (
               <div className="text-center py-16">
-                <Wallet className="w-12 h-12 text-[rgb(130,130,150)] mx-auto mb-3" />
-                <h3 className="text-white font-semibold mb-2">No wallets connected</h3>
-                <p className="text-[rgb(130,130,150)] text-sm">
+                <div className="w-20 h-20 rounded-2xl bg-[rgb(30,30,40)] flex items-center justify-center mx-auto mb-5">
+                  <Wallet className="w-10 h-10 text-[rgb(130,130,150)]" />
+                </div>
+                <h3 className="text-xl text-white font-bold mb-2">No wallets connected</h3>
+                <p className="text-[rgb(130,130,150)] text-base">
                   Add a Solana or Bitcoin wallet to enter giveaways and allowlists.
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {wallets.map((wallet) => (
                   <Card key={wallet.id}>
-                    <CardContent className="p-4">
+                    <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 rounded-lg bg-[rgb(30,30,40)] flex items-center justify-center shrink-0 text-lg ${chainColors[wallet.chain]}`}>
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className={`w-12 h-12 rounded-xl bg-[rgb(30,30,40)] flex items-center justify-center shrink-0 text-2xl ${chainColors[wallet.chain]}`}>
                             {wallet.chain === "SOL" ? "◎" : "₿"}
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <code className="text-sm text-white font-mono">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <code className="text-base text-white font-mono">
                                 {truncateAddress(wallet.address, 6)}
                               </code>
                               <Badge variant={chainBadgeVariants[wallet.chain]} className="text-xs py-0">
@@ -264,7 +266,7 @@ export default function WalletsPage() {
                               )}
                             </div>
                             {wallet.label && (
-                              <div className="text-xs text-[rgb(130,130,150)] mt-0.5">
+                              <div className="text-sm text-[rgb(130,130,150)]">
                                 {wallet.label}
                               </div>
                             )}
