@@ -13,6 +13,7 @@ export async function GET(
     const community = await prisma.community.findUnique({
       where: { id },
       include: {
+        owner: { select: { id: true, name: true, xHandle: true, avatarUrl: true } },
         memberAccess: true,
         _count: {
           select: {

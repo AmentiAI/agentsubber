@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,69 +14,70 @@ import {
   CheckCircle,
   Shield,
   Settings,
-  ExternalLink,
   Send,
 } from "lucide-react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getChainColor, getChainIcon, timeUntil, formatNumber } from "@/lib/utils";
-import { format } from "date-fns";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
+}
+
+async function getCommunityData(slug: string) {
+  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://agentsubber.vercel.app";
+  const res = await fetch(`${baseUrl}/api/communities?slug=${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const community = data.communities?.find((c: any) => c.slug === slug);
+  if (!community) return null;
+
+  // Get full community details
+  const detailedRes = await fetch(`${baseUrl}/api/communities/${community.id}`, {
+    cache: "no-store",
+  });
+  if (!detailedRes.ok) return null;
+  const detailed = await detailedRes.json();
+  return detailed.community ?? null;
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const community = await prisma.community.findUnique({
-    where: { slug: params.slug },
-    select: { name: true, description: true },
-  });
-  if (!community) return { title: "Not Found" };
-  return {
-    title: community.name,
-    description: community.description ?? undefined,
-  };
+  const { slug } = await params;
+  try {
+    const community = await getCommunityData(slug);
+    if (!community) return { title: "Not Found" };
+    return {
+      title: community.name,
+      description: community.description ?? undefined,
+    };
+  } catch {
+    return { title: "Community" };
+  }
 }
 
 export default async function CommunityPage({ params }: PageProps) {
+  const { slug } = await params;
   const session = await getServerSession(authOptions);
 
-  const community = await prisma.community.findUnique({
-    where: { slug: params.slug, isActive: true },
-    include: {
-      owner: { select: { id: true, name: true, xHandle: true, avatarUrl: true } },
-      memberAccess: true,
-      giveaways: {
-        where: { status: "ACTIVE" },
-        orderBy: { endAt: "asc" },
-        take: 6,
-        include: { _count: { select: { entries: true } } },
-      },
-      allowlistCampaigns: {
-        where: { status: "ACTIVE" },
-        orderBy: { closesAt: "asc" },
-        take: 4,
-      },
-      presales: {
-        where: { status: "ACTIVE" },
-        take: 4,
-      },
-      _count: {
-        select: {
-          giveaways: true,
-          allowlistCampaigns: true,
-          presales: true,
-        },
-      },
-    },
-  });
+  let community: any;
+  try {
+    community = await getCommunityData(slug);
+  } catch {
+    notFound();
+  }
 
   if (!community) notFound();
 
   const isOwner = session?.user?.id === community.ownerUserId;
   const chainColor = getChainColor(community.chain);
   const chainIcon = getChainIcon(community.chain);
+
+  const activeGiveaways = (community.giveaways ?? []).filter((g: any) => g.status === "ACTIVE").slice(0, 6);
+  const activeAllowlists = (community.allowlistCampaigns ?? []).filter((a: any) => a.status === "ACTIVE").slice(0, 4);
+  const activePresales = (community.presales ?? []).filter((p: any) => p.status === "ACTIVE").slice(0, 4);
 
   return (
     <div className="min-h-screen">
@@ -190,24 +190,24 @@ export default async function CommunityPage({ params }: PageProps) {
           <StatCard
             icon={<Gift className="w-4 h-4 text-purple-400" />}
             label="Active Giveaways"
-            value={community.giveaways.length}
+            value={activeGiveaways.length}
           />
           <StatCard
             icon={<List className="w-4 h-4 text-indigo-400" />}
             label="Allowlists"
-            value={community.allowlistCampaigns.length}
+            value={activeAllowlists.length}
           />
           <StatCard
             icon={<ShoppingBag className="w-4 h-4 text-green-400" />}
             label="Presales"
-            value={community.presales.length}
+            value={activePresales.length}
           />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Giveaways */}
-            {community.giveaways.length > 0 && (
+            {activeGiveaways.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -217,7 +217,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   <Badge variant="live">Live</Badge>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {community.giveaways.map((g: any) => (
+                  {activeGiveaways.map((g: any) => (
                     <GiveawayCard key={g.id} giveaway={g} communitySlug={community.slug} />
                   ))}
                 </div>
@@ -225,7 +225,7 @@ export default async function CommunityPage({ params }: PageProps) {
             )}
 
             {/* Allowlists */}
-            {community.allowlistCampaigns.length > 0 && (
+            {activeAllowlists.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -234,7 +234,7 @@ export default async function CommunityPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <div className="space-y-3">
-                  {community.allowlistCampaigns.map((al: any) => (
+                  {activeAllowlists.map((al: any) => (
                     <AllowlistCard key={al.id} allowlist={al} communitySlug={community.slug} />
                   ))}
                 </div>
@@ -242,7 +242,7 @@ export default async function CommunityPage({ params }: PageProps) {
             )}
 
             {/* Presales */}
-            {community.presales.length > 0 && (
+            {activePresales.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -251,16 +251,16 @@ export default async function CommunityPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {community.presales.map((p: any) => (
+                  {activePresales.map((p: any) => (
                     <PresaleCard key={p.id} presale={p} communitySlug={community.slug} />
                   ))}
                 </div>
               </section>
             )}
 
-            {community.giveaways.length === 0 &&
-              community.allowlistCampaigns.length === 0 &&
-              community.presales.length === 0 && (
+            {activeGiveaways.length === 0 &&
+              activeAllowlists.length === 0 &&
+              activePresales.length === 0 && (
                 <div className="text-center py-16 text-[rgb(130,130,150)]">
                   <Gift className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>No active campaigns right now. Check back soon!</p>
@@ -290,9 +290,9 @@ export default async function CommunityPage({ params }: PageProps) {
                 <div className="flex justify-between">
                   <span className="text-[rgb(130,130,150)]">Owner</span>
                   <span className="text-white">
-                    {community.owner.xHandle
+                    {community.owner?.xHandle
                       ? `@${community.owner.xHandle}`
-                      : community.owner.name}
+                      : community.owner?.name ?? "Unknown"}
                   </span>
                 </div>
               </CardContent>
@@ -348,7 +348,7 @@ function GiveawayCard({ giveaway, communitySlug }: { giveaway: any; communitySlu
           </div>
           <p className="text-xs text-purple-400 font-medium mb-3">Prize: {giveaway.prize}</p>
           <div className="flex items-center justify-between text-xs text-[rgb(130,130,150)]">
-            <span>{giveaway._count.entries} entries</span>
+            <span>{giveaway._count?.entries ?? 0} entries</span>
             <span>{giveaway.totalWinners} winner{giveaway.totalWinners !== 1 ? "s" : ""}</span>
             <span className="text-yellow-400">⏱ {timeUntil(new Date(giveaway.endAt))}</span>
           </div>
