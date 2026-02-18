@@ -68,6 +68,8 @@ export async function POST(
 
     return NextResponse.json({ entry }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[giveaway/enter] Error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Internal server error", detail: message }, { status: 500 });
   }
 }
