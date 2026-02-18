@@ -161,94 +161,70 @@ export default async function CommunityPage({ params }: PageProps) {
                   </div>
                 )}
 
-                {/* Social links row */}
-                <div className="flex items-center gap-2 flex-wrap mt-1">
+                {/* Social links row - labeled pill buttons */}
+                <div className="flex items-center gap-2 flex-wrap mt-3">
                   {community.twitterHandle && (
-                    <a
-                      href={`https://twitter.com/${community.twitterHandle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title={`@${community.twitterHandle}`}
-                    >
-                      <Twitter className="w-4 h-4" />
+                    <a href={`https://twitter.com/${community.twitterHandle}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <Twitter className="w-3.5 h-3.5" />
+                        Twitter
+                      </Button>
                     </a>
                   )}
                   {community.discordInvite && (
-                    <a
-                      href={community.discordInvite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Discord"
-                    >
-                      <MessageCircle className="w-4 h-4" />
+                    <a href={community.discordInvite} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Discord
+                      </Button>
                     </a>
                   )}
                   {community.telegramLink && (
-                    <a
-                      href={community.telegramLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Telegram"
-                    >
-                      <Send className="w-4 h-4" />
+                    <a href={community.telegramLink} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <Send className="w-3.5 h-3.5" />
+                        Telegram
+                      </Button>
                     </a>
                   )}
                   {community.websiteUrl && (
-                    <a
-                      href={community.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Website"
-                    >
-                      <Globe className="w-4 h-4" />
+                    <a href={community.websiteUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <Globe className="w-3.5 h-3.5" />
+                        Website
+                      </Button>
                     </a>
                   )}
                   {community.instagramUrl && (
-                    <a
-                      href={community.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Instagram"
-                    >
-                      <Instagram className="w-4 h-4" />
+                    <a href={community.instagramUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <Instagram className="w-3.5 h-3.5" />
+                        Instagram
+                      </Button>
                     </a>
                   )}
                   {community.youtubeUrl && (
-                    <a
-                      href={community.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="YouTube"
-                    >
-                      <Youtube className="w-4 h-4" />
+                    <a href={community.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <Youtube className="w-3.5 h-3.5" />
+                        YouTube
+                      </Button>
                     </a>
                   )}
                   {community.magicEdenUrl && (
-                    <a
-                      href={community.magicEdenUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Magic Eden"
-                    >
-                      <ExternalLink className="w-4 h-4" />
+                    <a href={community.magicEdenUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Magic Eden
+                      </Button>
                     </a>
                   )}
                   {community.tensorUrl && (
-                    <a
-                      href={community.tensorUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgb(25,25,35)] hover:bg-[rgb(35,35,50)] text-[rgb(130,130,150)] hover:text-white transition-colors"
-                      title="Tensor"
-                    >
-                      <ExternalLink className="w-4 h-4" />
+                    <a href={community.tensorUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" size="sm" className="gap-1.5 rounded-full px-4">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Tensor
+                      </Button>
                     </a>
                   )}
                 </div>
@@ -604,24 +580,30 @@ function GiveawayCard({
   accent?: string;
 }) {
   return (
-    <Link href={`/c/${communitySlug}/giveaways/${giveaway.id}`}>
-      <Card className="card-hover">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="text-base font-semibold text-white leading-tight">{giveaway.title}</h3>
-            <Badge variant="live" className="shrink-0 ml-2">Live</Badge>
-          </div>
-          <p className="text-sm font-medium mb-3" style={{ color: accent ?? "#a78bfa" }}>
-            Prize: {giveaway.prize}
-          </p>
-          <div className="flex items-center justify-between text-sm text-[rgb(130,130,150)]">
-            <span>{giveaway._count?.entries ?? 0} entries</span>
-            <span>{giveaway.totalWinners} winner{giveaway.totalWinners !== 1 ? "s" : ""}</span>
-            <span className="text-yellow-400">⏱ {timeUntil(new Date(giveaway.endAt))}</span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+    <Card className="card-hover flex flex-col">
+      <CardContent className="p-6 flex flex-col flex-1">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-lg font-bold text-white leading-tight">{giveaway.title}</h3>
+          <Badge variant="live" className="shrink-0 ml-2">Live</Badge>
+        </div>
+        <p className="text-base font-semibold mb-3" style={{ color: accent ?? "#a78bfa" }}>
+          🏆 {giveaway.prize}
+        </p>
+        <div className="flex items-center gap-4 text-sm text-[rgb(130,130,150)] mb-5">
+          <span>{giveaway._count?.entries ?? 0} entries</span>
+          <span>{giveaway.totalWinners} winner{giveaway.totalWinners !== 1 ? "s" : ""}</span>
+          <span className="text-yellow-400 ml-auto">⏱ {timeUntil(new Date(giveaway.endAt))}</span>
+        </div>
+        <div className="mt-auto">
+          <Link href={`/c/${communitySlug}/giveaways/${giveaway.id}`}>
+            <Button variant="gradient" className="w-full gap-2">
+              <Gift className="w-4 h-4" />
+              Enter Giveaway
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -635,65 +617,84 @@ function AllowlistCard({
   accent?: string;
 }) {
   const pct = Math.round((allowlist.filledSpots / allowlist.totalSpots) * 100);
+  const isFull = allowlist.filledSpots >= allowlist.totalSpots;
   return (
-    <Link href={`/c/${communitySlug}/allowlist/${allowlist.id}`}>
-      <Card className="card-hover">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-white">{allowlist.name}</h3>
-            <Badge variant="secondary" className="text-sm">
-              {allowlist.entryMethod}
-            </Badge>
+    <Card className="card-hover flex flex-col">
+      <CardContent className="p-6 flex flex-col flex-1">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-lg font-bold text-white">{allowlist.name}</h3>
+          <Badge variant="secondary" className="shrink-0 ml-2">
+            {allowlist.entryMethod}
+          </Badge>
+        </div>
+        <div className="flex justify-between text-sm text-[rgb(130,130,150)] mb-2">
+          <span>{allowlist.filledSpots} / {allowlist.totalSpots} spots</span>
+          <span>{pct}%{isFull ? " · Full" : ""}</span>
+        </div>
+        <div className="w-full h-3 rounded-full bg-[rgb(30,30,40)] mb-3">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${Math.min(pct, 100)}%`,
+              background: `linear-gradient(to right, ${accent ?? "#7c3aed"}, ${accent ? accent + "bb" : "#4f46e5"})`,
+            }}
+          />
+        </div>
+        {allowlist.closesAt && (
+          <div className="text-sm text-[rgb(130,130,150)] mb-4">
+            ⏰ Closes {timeUntil(new Date(allowlist.closesAt))}
           </div>
-          <div className="mb-1">
-            <div className="flex justify-between text-sm text-[rgb(130,130,150)] mb-1">
-              <span>{allowlist.filledSpots} / {allowlist.totalSpots} spots</span>
-              <span>{pct}%</span>
-            </div>
-            <div className="w-full h-2.5 rounded-full bg-[rgb(30,30,40)]">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.min(pct, 100)}%`,
-                  background: `linear-gradient(to right, ${accent ?? "#7c3aed"}, ${accent ? accent + "bb" : "#4f46e5"})`,
-                }}
-              />
-            </div>
-          </div>
-          {allowlist.closesAt && (
-            <div className="text-sm text-[rgb(130,130,150)] mt-2">
-              Closes {timeUntil(new Date(allowlist.closesAt))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+        )}
+        <div className="mt-auto">
+          <Link href={`/c/${communitySlug}/allowlist/${allowlist.id}`}>
+            <Button variant="gradient" className="w-full gap-2" disabled={isFull}>
+              <List className="w-4 h-4" />
+              {isFull ? "Full — View Waitlist" : "Join Allowlist"}
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 function PresaleCard({ presale, communitySlug }: { presale: any; communitySlug: string }) {
   const soldPct = Math.round((presale.soldCount / presale.totalSupply) * 100);
+  const soldOut = presale.soldCount >= presale.totalSupply;
   return (
-    <Link href={`/c/${communitySlug}/presale/${presale.id}`}>
-      <Card className="card-hover">
-        <CardContent className="p-5">
-          <h3 className="text-base font-semibold text-white mb-1">{presale.name}</h3>
-          <div className="text-sm text-green-400 font-medium mb-3">
-            {presale.priceSOL ? `${presale.priceSOL} SOL` : ""}
-            {presale.priceBTC ? `${presale.priceBTC} BTC` : ""}
-          </div>
-          <div className="flex justify-between text-sm text-[rgb(130,130,150)]">
-            <span>{presale.soldCount} / {presale.totalSupply} sold</span>
-            <span>{soldPct}%</span>
-          </div>
-          <div className="w-full h-2.5 rounded-full bg-[rgb(30,30,40)] mt-2">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-green-600 to-emerald-600"
-              style={{ width: `${Math.min(soldPct, 100)}%` }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+    <Card className="card-hover flex flex-col">
+      <CardContent className="p-6 flex flex-col flex-1">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-lg font-bold text-white">{presale.name}</h3>
+          {soldOut && <Badge variant="secondary">Sold Out</Badge>}
+        </div>
+        <div className="text-xl font-black text-green-400 mb-3">
+          {presale.priceSOL ? `${presale.priceSOL} SOL` : ""}
+          {presale.priceBTC ? `${presale.priceBTC} BTC` : ""}
+        </div>
+        <div className="flex justify-between text-sm text-[rgb(130,130,150)] mb-2">
+          <span>{presale.soldCount} / {presale.totalSupply} sold</span>
+          <span>{soldPct}%</span>
+        </div>
+        <div className="w-full h-3 rounded-full bg-[rgb(30,30,40)] mb-5">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-green-600 to-emerald-600"
+            style={{ width: `${Math.min(soldPct, 100)}%` }}
+          />
+        </div>
+        <div className="mt-auto">
+          <Link href={`/c/${communitySlug}/presale/${presale.id}`}>
+            <Button
+              variant="gradient"
+              className="w-full gap-2"
+              disabled={soldOut}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              {soldOut ? "Sold Out" : "Buy Now"}
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
