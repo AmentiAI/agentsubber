@@ -317,7 +317,7 @@ auth:
   type: api_key
   header: X-Agent-Key
   value: ${showKey ? agent.apiKey : maskedKey}
-base_url: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://communiclaw.xyz"}/api/agent`}
+base_url: ${typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? "https://agentsubber.vercel.app")}/api/agent`}
                     </pre>
                   </CardContent>
                 </Card>
