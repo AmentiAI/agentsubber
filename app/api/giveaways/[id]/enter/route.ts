@@ -58,12 +58,16 @@ export async function POST(
       },
     });
 
-    // Pusher: broadcast live entry count
-    if (process.env.PUSHER_APP_ID) {
-      const count = await prisma.giveawayEntry.count({ where: { giveawayId: id } });
-      getPusherServer()
-        .trigger(CHANNELS.giveaway(id), EVENTS.ENTRY_COUNT, { count })
-        .catch(() => {});
+    // Pusher: broadcast live entry count (best-effort, never fail the request)
+    if (process.env.PUSHER_APP_ID && process.env.PUSHER_SECRET) {
+      try {
+        const count = await prisma.giveawayEntry.count({ where: { giveawayId: id } });
+        await getPusherServer()
+          .trigger(CHANNELS.giveaway(id), EVENTS.ENTRY_COUNT, { count })
+          .catch(() => {});
+      } catch {
+        // Pusher not configured — ignore
+      }
     }
 
     return NextResponse.json({ entry }, { status: 201 });
