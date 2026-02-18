@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Chain {
+  SOL
+  BTC
+  ETH
+}
+
+enum GateType {
+  OPEN
+  NFT
+  SPL_TOKEN
+  DISCORD_ROLE
+  NFT_AND_DISCORD
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+enum GiveawayStatus {
+  UPCOMING
+  ACTIVE
+  DRAWING
+  COMPLETED
+  CANCELLED
+}
+
+enum CollabStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum PresaleStatus {
+  DRAFT
+  ACTIVE
+  SOLD_OUT
+  ENDED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ELITE
+}
+
+enum EntryMethod {
+  RAFFLE
+  FCFS
+  COLLAB
+  AGENT
+}
+
+// ─────────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  email            String?   @unique
+  username         String?   @unique
+  name             String?
+  avatarUrl        String?
+  bio              String?
+  role             UserRole  @default(USER)
+  xHandle          String?
+  xProfilePic      String?
+  xFollowerCount   Int?
+  xId              String?   @unique
+  stripeCustomerId String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  wallets          Wallet[]
+  agent            OpenClawAgent?
+  subscription     Subscription?
+  ownedCommunities Community[]         @relation("CommunityOwner")
+  giveawayEntries  GiveawayEntry[]
+  allowlistEntries AllowlistEntry[]
+  presaleOrders    PresaleOrder[]
+  trackerAlerts    WalletTrackerAlert[]
+  notifications    Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// WALLETS
+// ─────────────────────────────────────────────
+
+model Wallet {
+  id            String   @id @default(cuid())
+  userId        String
+  address       String
+  chain         Chain
+  label         String?
+  verified      Boolean  @default(false)
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allowlistEntries AllowlistEntry[]
+  giveawayEntries  GiveawayEntry[]
+  presaleOrders    PresaleOrder[]
+
+  @@unique([address, chain])
+}
+
+// ─────────────────────────────────────────────
+// OPENCLAW AGENT
+// ─────────────────────────────────────────────
+
+model OpenClawAgent {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  agentName    String
+  apiKey       String    @unique @default(cuid())
+  permissions  String[]  @default(["READ_GIVEAWAYS", "ENTER_GIVEAWAYS", "READ_ALLOWLISTS", "ENTER_ALLOWLISTS", "READ_COMMUNITIES"])
+  isActive     Boolean   @default(true)
+  lastActiveAt DateTime?
+  requestCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity AgentActivity[]
+}
+
+model AgentActivity {
+  id        String   @id @default(cuid())
+  agentId   String
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  agent OpenClawAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIPTIONS
+// ─────────────────────────────────────────────
+
+model Subscription {
+  id                String           @id @default(cuid())
+  userId            String           @unique
+  stripeSubId       String?          @unique
+  plan              SubscriptionPlan @default(FREE)
+  status            String           @default("active")
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// COMMUNITY
+// ─────────────────────────────────────────────
+
+model Community {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  name          String
+  slug          String   @unique
+  description   String?  @db.Text
+  logoUrl       String?
+  bannerUrl     String?
+  chain         Chain    @default(SOL)
+  twitterHandle String?
+  discordInvite String?
+  telegramLink  String?
+  websiteUrl    String?
+  memberCount   Int      @default(0)
+  verified      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner              User                @relation("CommunityOwner", fields: [ownerUserId], references: [id])
+  memberAccess       MemberAccess?
+  allowlistCampaigns AllowlistCampaign[]
+  giveaways          Giveaway[]
+  presales           Presale[]
+  tokenGatedContent  TokenGatedContent[]
+  mintCalendarEvents MintCalendarEvent[]
+  discordIntegration DiscordIntegration?
+  collabsSent        CollabOffer[]       @relation("CollabFrom")
+  collabsReceived    CollabOffer[]       @relation("CollabTo")
+}
+
+model MemberAccess {
+  id             String   @id @default(cuid())
+  communityId    String   @unique
+  gateType       GateType @default(OPEN)
+  nftAddress     String?
+  minTokenAmount Float?
+  discordRoleId  String?
+  discordGuildId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// ALLOWLISTS
+// ─────────────────────────────────────────────
+
+model AllowlistCampaign {
+  id             String         @id @default(cuid())
+  communityId    String
+  name           String
+  description    String?        @db.Text
+  totalSpots     Int
+  filledSpots    Int            @default(0)
+  status         CampaignStatus @default(DRAFT)
+  entryMethod    EntryMethod    @default(FCFS)
+  closesAt       DateTime?
+  requiresWallet Boolean        @default(true)
+  chain          Chain          @default(SOL)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  community Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  entries   AllowlistEntry[]
+}
+
+model AllowlistEntry {
+  id            String      @id @default(cuid())
+  campaignId    String
+  userId        String?
+  walletId      String?
+  walletAddress String
+  entryMethod   EntryMethod @default(FCFS)
+  collabId      String?
+  createdAt     DateTime    @default(now())
+
+  campaign AllowlistCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User?             @relation(fields: [userId], references: [id])
+  wallet   Wallet?           @relation(fields: [walletId], references: [id])
+
+  @@unique([campaignId, walletAddress])
+}
+
+// ─────────────────────────────────────────────
+// GIVEAWAYS
+// ─────────────────────────────────────────────
+
+model Giveaway {
+  id               String         @id @default(cuid())
+  communityId      String
+  title            String
+  description      String?        @db.Text
+  prize            String
+  totalWinners     Int            @default(1)
+  status           GiveawayStatus @default(UPCOMING)
+  startAt          DateTime
+  endAt            DateTime
+  requiresXFollow  Boolean        @default(false)
+  xAccountToFollow String?
+  requiresDiscord  Boolean        @default(false)
+  tokenGateAddress String?
+  tokenGateAmount  Float?
+  isAgentEligible  Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  community Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  entries   GiveawayEntry[]
+  winners   GiveawayWinner[]
+}
+
+model GiveawayEntry {
+  id              String   @id @default(cuid())
+  giveawayId      String
+  userId          String
+  walletId        String?
+  walletAddress   String?
+  xUsername       String?
+  discordUsername String?
+  enteredByAgent  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  giveaway Giveaway        @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
+  wallet   Wallet?         @relation(fields: [walletId], references: [id])
+  winner   GiveawayWinner?
+
+  @@unique([giveawayId, userId])
+}
+
+model GiveawayWinner {
+  id         String   @id @default(cuid())
+  giveawayId String
+  entryId    String   @unique
+  userId     String
+  drawnAt    DateTime @default(now())
+
+  giveaway Giveaway      @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  entry    GiveawayEntry @relation(fields: [entryId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// COLLABS
+// ─────────────────────────────────────────────
+
+model CollabOffer {
+  id              String       @id @default(cuid())
+  fromCommunityId String
+  toCommunityId   String
+  spotsOffered    Int
+  status          CollabStatus @default(PENDING)
+  message         String?      @db.Text
+  campaignId      String?
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  fromCommunity Community @relation("CollabFrom", fields: [fromCommunityId], references: [id], onDelete: Cascade)
+  toCommunity   Community @relation("CollabTo",   fields: [toCommunityId],   references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// PRESALES
+// ─────────────────────────────────────────────
+
+model Presale {
+  id                String        @id @default(cuid())
+  communityId       String
+  name              String
+  description       String?       @db.Text
+  priceSOL          Float?
+  priceBTC          Float?
+  totalSupply       Int
+  soldCount         Int           @default(0)
+  maxPerWallet      Int           @default(1)
+  status            PresaleStatus @default(DRAFT)
+  startsAt          DateTime
+  endsAt            DateTime
+  allowlistRequired Boolean       @default(false)
+  campaignId        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  community Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  orders    PresaleOrder[]
+}
+
+model PresaleOrder {
+  id            String   @id @default(cuid())
+  presaleId     String
+  userId        String
+  walletId      String?
+  walletAddress String
+  quantity      Int      @default(1)
+  txHash        String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+
+  presale Presale @relation(fields: [presaleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  wallet  Wallet? @relation(fields: [walletId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// TOKEN-GATED CONTENT
+// ─────────────────────────────────────────────
+
+model TokenGatedContent {
+  id          String   @id @default(cuid())
+  communityId String
+  title       String
+  body        String   @db.Text
+  mediaUrls   String[]
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// MINT CALENDAR
+// ─────────────────────────────────────────────
+
+model MintCalendarEvent {
+  id             String   @id @default(cuid())
+  communityId    String
+  mintDate       DateTime
+  mintPrice      Float?
+  mintPriceToken String?
+  chain          Chain    @default(SOL)
+  spotsAvailable Int?
+  mintUrl        String?
+  description    String?
+  createdAt      DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// DISCORD
+// ─────────────────────────────────────────────
+
+model DiscordIntegration {
+  id                String   @id @default(cuid())
+  communityId       String   @unique
+  guildId           String
+  webhookUrl        String?
+  giveawayChannelId String?
+  winnerChannelId   String?
+  botToken          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// WALLET TRACKER
+// ─────────────────────────────────────────────
+
+model WalletTrackerAlert {
+  id             String   @id @default(cuid())
+  userId         String
+  watchedAddress String
+  chain          Chain
+  alertTypes     String[] @default(["TRANSFER"])
+  webhookUrl     String?
+  telegramChatId String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
