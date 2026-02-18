@@ -127,7 +127,7 @@ export default function ManageCommunityPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold overflow-hidden">
                 {community.logoUrl ? (
-                  <img src={community.logoUrl} alt={community.name} className="w-full h-full object-cover" />
+                  <img src={community.logoUrl} alt={community.name} className="w-full h-full object-cover" style={{ objectPosition: community.logoPosition ?? "50% 50%" }} />
                 ) : (
                   community.name[0].toUpperCase()
                 )}
@@ -1067,7 +1067,9 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
     magicEdenUrl: community.magicEdenUrl ?? "",
     tensorUrl: community.tensorUrl ?? "",
     logoUrl: community.logoUrl ?? "",
+    logoPosition: community.logoPosition ?? "50% 50%",
     bannerUrl: community.bannerUrl ?? "",
+    bannerPosition: community.bannerPosition ?? "50% 50%",
     tags: community.tags ?? "",
     announcementText: community.announcementText ?? "",
     mintDate: community.mintDate ?? "",
@@ -1132,49 +1134,64 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
             <CardTitle className="text-sm">Branding</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Logo */}
+
+            {/* ── Logo ── */}
             <div>
               <label className="text-xs text-[rgb(130,130,150)] mb-2 block font-medium">Logo</label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-4">
                 {/* Preview */}
-                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-[rgb(60,60,80)] bg-[rgb(16,16,22)] flex items-center justify-center overflow-hidden shrink-0">
+                <div
+                  className="w-20 h-20 rounded-xl border-2 border-dashed border-[rgb(60,60,80)] bg-[rgb(16,16,22)] flex items-center justify-center overflow-hidden shrink-0"
+                >
                   {form.logoUrl ? (
                     <img
                       src={form.logoUrl}
                       alt="Logo"
                       className="w-full h-full object-cover"
+                      style={{ objectPosition: form.logoPosition }}
                     />
                   ) : (
                     <Upload className="w-6 h-6 text-[rgb(80,80,100)]" />
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => logoInputRef.current?.click()}
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    {form.logoUrl ? "Change Logo" : "Upload Logo"}
-                  </Button>
-                  {form.logoUrl && (
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="gap-2 text-red-400 hover:text-red-300"
-                      onClick={() => {
-                        setForm((prev) => ({ ...prev, logoUrl: "" }));
-                        if (logoInputRef.current) logoInputRef.current.value = "";
-                      }}
+                      className="gap-2"
+                      onClick={() => logoInputRef.current?.click()}
                     >
-                      <X className="w-3.5 h-3.5" />
-                      Remove
+                      <Upload className="w-3.5 h-3.5" />
+                      {form.logoUrl ? "Change" : "Upload Logo"}
                     </Button>
-                  )}
+                    {form.logoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-red-400 hover:text-red-300"
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, logoUrl: "", logoPosition: "50% 50%" }));
+                          if (logoInputRef.current) logoInputRef.current.value = "";
+                        }}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-xs text-[rgb(100,100,120)]">PNG, JPG, GIF · max 2 MB</p>
+
+                  {/* Position sliders — only shown when logo is set */}
+                  {form.logoUrl && (
+                    <PositionPicker
+                      value={form.logoPosition}
+                      onChange={(v) => setForm((prev) => ({ ...prev, logoPosition: v }))}
+                      label="Focal Point"
+                    />
+                  )}
                 </div>
               </div>
               <input
@@ -1186,9 +1203,11 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
               />
             </div>
 
-            {/* Banner */}
+            {/* ── Banner ── */}
             <div>
               <label className="text-xs text-[rgb(130,130,150)] mb-2 block font-medium">Banner</label>
+
+              {/* Upload zone */}
               <div
                 className="w-full h-28 rounded-xl border-2 border-dashed border-[rgb(60,60,80)] bg-[rgb(16,16,22)] flex items-center justify-center overflow-hidden cursor-pointer hover:border-purple-500/50 transition-colors relative group"
                 onClick={() => bannerInputRef.current?.click()}
@@ -1199,10 +1218,11 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
                       src={form.bannerUrl}
                       alt="Banner"
                       className="w-full h-full object-cover"
+                      style={{ objectPosition: form.bannerPosition }}
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Upload className="w-6 h-6 text-white" />
-                      <span className="text-white text-sm ml-2">Change Banner</span>
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Upload className="w-5 h-5 text-white" />
+                      <span className="text-white text-sm font-medium">Change Banner</span>
                     </div>
                   </>
                 ) : (
@@ -1213,22 +1233,31 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
                   </div>
                 )}
               </div>
+
+              {/* Position + remove — only when banner set */}
               {form.bannerUrl && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 gap-2 text-red-400 hover:text-red-300"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setForm((prev) => ({ ...prev, bannerUrl: "" }));
-                    if (bannerInputRef.current) bannerInputRef.current.value = "";
-                  }}
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Remove Banner
-                </Button>
+                <div className="mt-3 space-y-3">
+                  <BannerPositionPicker
+                    bannerUrl={form.bannerUrl}
+                    value={form.bannerPosition}
+                    onChange={(v) => setForm((prev) => ({ ...prev, bannerPosition: v }))}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-red-400 hover:text-red-300"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, bannerUrl: "", bannerPosition: "50% 50%" }));
+                      if (bannerInputRef.current) bannerInputRef.current.value = "";
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Remove Banner
+                  </Button>
+                </div>
               )}
+
               <input
                 ref={bannerInputRef}
                 type="file"
@@ -1397,6 +1426,158 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ─── PositionPicker — X/Y sliders for logo focal point ─── */
+function PositionPicker({
+  value,
+  onChange,
+  label = "Focal Point",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+}) {
+  const parse = (v: string) => {
+    const parts = v.split(" ");
+    const x = parseFloat(parts[0]) || 50;
+    const y = parseFloat(parts[1]) || 50;
+    return { x, y };
+  };
+  const { x, y } = parse(value);
+
+  const update = (axis: "x" | "y", num: number) => {
+    const next = axis === "x" ? `${num}% ${y}%` : `${x}% ${num}%`;
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-2 pt-1">
+      <p className="text-xs text-[rgb(100,100,120)]">
+        {label} — drag sliders to reposition image
+      </p>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[rgb(130,130,150)] w-12">Left ↔ Right</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={x}
+            onChange={(e) => update("x", Number(e.target.value))}
+            className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
+          />
+          <span className="text-xs text-[rgb(130,130,150)] w-8 text-right">{Math.round(x)}%</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[rgb(130,130,150)] w-12">Top ↕ Bottom</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={y}
+            onChange={(e) => update("y", Number(e.target.value))}
+            className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
+          />
+          <span className="text-xs text-[rgb(130,130,150)] w-8 text-right">{Math.round(y)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── BannerPositionPicker — live drag preview for banner ─── */
+function BannerPositionPicker({
+  bannerUrl,
+  value,
+  onChange,
+}: {
+  bannerUrl: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const parse = (v: string) => {
+    const parts = v.split(" ");
+    return { x: parseFloat(parts[0]) || 50, y: parseFloat(parts[1]) || 50 };
+  };
+  const pos = parse(value);
+
+  const updateFromEvent = (e: React.MouseEvent | MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    onChange(`${Math.round(x)}% ${Math.round(y)}%`);
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    dragging.current = true;
+    updateFromEvent(e);
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging.current) return;
+    updateFromEvent(e);
+  };
+  const onMouseUp = () => { dragging.current = false; };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-[rgb(100,100,120)]">
+        Click or drag on the preview to set focal point
+      </p>
+      <div
+        ref={containerRef}
+        className="relative w-full h-24 rounded-xl overflow-hidden cursor-crosshair border border-[rgb(40,40,55)] select-none"
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+      >
+        <img
+          src={bannerUrl}
+          alt="Banner position"
+          className="w-full h-full object-cover pointer-events-none"
+          style={{ objectPosition: value }}
+          draggable={false}
+        />
+        {/* Crosshair dot */}
+        <div
+          className="absolute w-5 h-5 rounded-full border-2 border-white shadow-lg bg-white/20 -translate-x-1/2 -translate-y-1/2 pointer-events-none ring-1 ring-black/30"
+          style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+        />
+        {/* Crosshair lines */}
+        <div
+          className="absolute top-0 bottom-0 w-px bg-white/40 pointer-events-none"
+          style={{ left: `${pos.x}%` }}
+        />
+        <div
+          className="absolute left-0 right-0 h-px bg-white/40 pointer-events-none"
+          style={{ top: `${pos.y}%` }}
+        />
+        <div className="absolute bottom-1.5 right-2 text-[10px] text-white/60 font-mono pointer-events-none">
+          {Math.round(pos.x)}% · {Math.round(pos.y)}%
+        </div>
+      </div>
+      {/* Also expose Y-only slider for fine control */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-[rgb(130,130,150)] w-16">Vertical</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={pos.y}
+          onChange={(e) =>
+            onChange(`${Math.round(pos.x)}% ${Number(e.target.value)}%`)
+          }
+          className="flex-1 accent-purple-500 h-1.5 cursor-pointer"
+        />
+        <span className="text-xs text-[rgb(130,130,150)] w-8 text-right">{Math.round(pos.y)}%</span>
+      </div>
     </div>
   );
 }

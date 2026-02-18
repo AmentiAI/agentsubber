@@ -226,8 +226,10 @@ model Community {
   name          String
   slug          String   @unique
   description   String?  @db.Text
-  logoUrl       String?
-  bannerUrl     String?
+  logoUrl        String?
+  bannerUrl      String?
+  logoPosition   String?  @default("50% 50%")
+  bannerPosition String?  @default("50% 50%")
   chain         Chain    @default(SOL)
   twitterHandle    String?
   discordInvite    String?

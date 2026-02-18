@@ -112,6 +112,7 @@ export default async function CommunityPage({ params }: PageProps) {
             src={community.bannerUrl}
             alt=""
             className="w-full h-full object-cover opacity-70"
+            style={{ objectPosition: community.bannerPosition ?? "50% 50%" }}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[rgb(10,10,15)] to-transparent" />
@@ -128,7 +129,7 @@ export default async function CommunityPage({ params }: PageProps) {
                 style={{ borderColor: "rgb(10,10,15)" }}
               >
                 {community.logoUrl ? (
-                  <img src={community.logoUrl} alt={community.name} className="w-full h-full object-cover" />
+                  <img src={community.logoUrl} alt={community.name} className="w-full h-full object-cover" style={{ objectPosition: community.logoPosition ?? "50% 50%" }} />
                 ) : (
                   community.name[0].toUpperCase()
                 )}
