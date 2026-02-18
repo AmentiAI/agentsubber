@@ -18,6 +18,7 @@ import {
   X,
   Bot,
   Calendar,
+  Rss,
 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
 
@@ -51,6 +52,12 @@ export default function Navbar() {
 
           {/* Center nav */}
           <div className="hidden md:flex items-center gap-1">
+            <Link href="/feed">
+              <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-[rgb(160,160,180)] hover:text-white hover:bg-[rgb(25,25,35)] transition-colors">
+                <Rss className="w-4 h-4" />
+                Feed
+              </button>
+            </Link>
             <Link href="/discover">
               <Button variant="ghost" size="sm" className="gap-2">
                 <Compass className="w-4 h-4" />
@@ -182,6 +189,7 @@ export default function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-[rgb(40,40,55)] py-3 space-y-1">
+            <MobileNavItem href="/feed" onClick={() => setMenuOpen(false)}>Feed</MobileNavItem>
             <MobileNavItem href="/discover" onClick={() => setMenuOpen(false)}>Discover</MobileNavItem>
             <MobileNavItem href="/calendar" onClick={() => setMenuOpen(false)}>Calendar</MobileNavItem>
             {session && (

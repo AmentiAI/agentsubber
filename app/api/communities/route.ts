@@ -13,6 +13,19 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") ?? "24");
 
     const slug = searchParams.get("slug");
+    const mine = searchParams.get("mine") === "true";
+
+    // ?mine=true — return just the caller's communities for the post composer
+    if (mine) {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) return NextResponse.json({ communities: [] });
+      const owned = await prisma.community.findMany({
+        where: { ownerUserId: session.user.id, isActive: true },
+        select: { id: true, name: true, slug: true, logoUrl: true, logoPosition: true, accentColor: true },
+        orderBy: { createdAt: "asc" },
+      });
+      return NextResponse.json({ communities: owned });
+    }
 
     const where: any = { isActive: true };
     if (slug) where.slug = slug;
