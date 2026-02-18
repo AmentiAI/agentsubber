@@ -27,9 +27,9 @@ export default function AllowlistsPage() {
         <div className="flex gap-8">
           <DashboardSidebar />
           <main className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-8">
-              <List className="w-6 h-6 text-indigo-400" />
-              <h1 className="text-2xl font-bold text-white">Open Allowlists</h1>
+            <div className="flex items-center gap-3 mb-10">
+              <List className="w-8 h-8 text-indigo-400" />
+              <h1 className="text-4xl font-black text-white">Open Allowlists</h1>
             </div>
 
             {loading ? (
@@ -38,9 +38,11 @@ export default function AllowlistsPage() {
               </div>
             ) : campaigns.length === 0 ? (
               <div className="text-center py-20">
-                <List className="w-12 h-12 text-[rgb(130,130,150)] mx-auto mb-4 opacity-40" />
-                <h3 className="text-white font-semibold mb-2">No open allowlists</h3>
-                <p className="text-[rgb(130,130,150)] text-sm">
+                <div className="w-20 h-20 rounded-2xl bg-[rgb(30,30,40)] flex items-center justify-center mx-auto mb-5">
+                  <List className="w-10 h-10 text-[rgb(130,130,150)] opacity-60" />
+                </div>
+                <h3 className="text-xl text-white font-bold mb-2">No open allowlists</h3>
+                <p className="text-[rgb(130,130,150)] text-base">
                   Check the{" "}
                   <Link href="/discover" className="text-purple-400 hover:underline">
                     Discover
@@ -49,7 +51,7 @@ export default function AllowlistsPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {campaigns.map((a) => {
                   const pct = Math.round((a.filledSpots / a.totalSpots) * 100);
                   return (
@@ -58,29 +60,29 @@ export default function AllowlistsPage() {
                       href={`/c/${a.community.slug}/allowlist/${a.id}`}
                     >
                       <Card className="card-hover">
-                        <CardContent className="p-5">
+                        <CardContent className="p-6">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
                                     {a.community.name[0].toUpperCase()}
                                   </div>
-                                  <span className="text-xs text-[rgb(130,130,150)]">{a.community.name}</span>
+                                  <span className="text-sm text-[rgb(130,130,150)]">{a.community.name}</span>
                                 </div>
                                 <Badge variant="secondary" className="text-xs">{a.entryMethod}</Badge>
                               </div>
-                              <h3 className="text-sm font-semibold text-white mb-2">{a.name}</h3>
-                              <div className="flex items-center justify-between mb-1 text-xs text-[rgb(130,130,150)]">
+                              <h3 className="text-base font-semibold text-white mb-3">{a.name}</h3>
+                              <div className="flex items-center justify-between mb-1.5 text-sm text-[rgb(130,130,150)]">
                                 <span className="flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
+                                  <Users className="w-4 h-4" />
                                   {a.filledSpots} / {a.totalSpots} spots
                                 </span>
                                 {a.closesAt && (
                                   <span>Closes {timeUntil(new Date(a.closesAt))}</span>
                                 )}
                               </div>
-                              <div className="w-full h-1.5 rounded-full bg-[rgb(30,30,40)]">
+                              <div className="w-full h-2 rounded-full bg-[rgb(30,30,40)]">
                                 <div
                                   className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-purple-600"
                                   style={{ width: `${Math.min(pct, 100)}%` }}
