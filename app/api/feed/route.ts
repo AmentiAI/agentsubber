@@ -59,13 +59,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Post too long (max 2000 chars)" }, { status: 400 });
   }
 
-  // Verify community ownership if communityId provided
+  // Verify community exists if communityId provided (any member can post to a community board)
   if (communityId) {
-    const community = await prisma.community.findFirst({
-      where: { id: communityId, ownerUserId: session.user.id },
-    });
+    const community = await prisma.community.findUnique({ where: { id: communityId } });
     if (!community) {
-      return NextResponse.json({ error: "Community not found or not yours" }, { status: 403 });
+      return NextResponse.json({ error: "Community not found" }, { status: 404 });
     }
   }
 

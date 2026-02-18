@@ -19,6 +19,7 @@ import {
   Youtube,
   ExternalLink,
   Megaphone,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -223,16 +224,21 @@ export default async function CommunityPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Owner actions */}
-            {isOwner && (
-              <div className="pb-2">
+            {/* Actions */}
+            <div className="pb-2 flex items-center gap-2 flex-wrap">
+              <Link href={`/c/${community.slug}/board`}>
+                <Button variant="gradient" className="gap-2">
+                  <MessageSquare className="w-4 h-4" />Community Board
+                </Button>
+              </Link>
+              {isOwner && (
                 <Link href={`/c/${community.slug}/manage`}>
                   <Button variant="secondary" className="gap-2">
-                    <Settings className="w-4 h-4" />Manage Community
+                    <Settings className="w-4 h-4" />Manage
                   </Button>
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
