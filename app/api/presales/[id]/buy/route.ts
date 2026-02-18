@@ -10,6 +10,10 @@ export async function POST(
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Sign in required to purchase" }, { status: 401 });
+    }
 
     const body = await request.json();
     const { walletAddress, quantity = 1 } = body as {
@@ -34,8 +38,8 @@ export async function POST(
     if (presale.soldCount + quantity > presale.totalSupply) {
       return NextResponse.json({ error: "Not enough supply remaining" }, { status: 400 });
     }
-    if (presale.closesAt && new Date(presale.closesAt) < new Date()) {
-      return NextResponse.json({ error: "Presale has closed" }, { status: 400 });
+    if (new Date(presale.endsAt) < new Date()) {
+      return NextResponse.json({ error: "Presale has ended" }, { status: 400 });
     }
 
     // Check per-wallet limit
@@ -55,7 +59,7 @@ export async function POST(
       prisma.presaleOrder.create({
         data: {
           presaleId: id,
-          userId: session?.user?.id,
+          userId: session.user.id,
           walletAddress,
           quantity,
           status: "PENDING",

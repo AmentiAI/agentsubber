@@ -753,10 +753,12 @@ function PresalesTab({ community }: { community: any }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-white">Presales ({presales.length})</h2>
-        <Button variant="gradient" size="sm" className="gap-2" disabled>
-          <Plus className="w-4 h-4" />
-          New Presale
-        </Button>
+        <Link href="/dashboard/presales/new">
+          <Button variant="gradient" size="sm" className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Presale
+          </Button>
+        </Link>
       </div>
 
       {presales.length === 0 ? (
