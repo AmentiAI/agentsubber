@@ -181,6 +181,26 @@ export default function WalletsPage() {
     setModalStatus({ type: "idle" });
   }
 
+  // ─── shared connect helper ───
+  const doConnect = useCallback(async (address: string, chain: string, message: string, signature: string) => {
+    setModalStatus({ type: "saving" });
+    const res = await fetch("/api/wallets/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, chain, label: modalLabel, message, signature }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`);
+    // Upsert in local state
+    setWallets((prev) => {
+      const exists = prev.find((w) => w.id === data.wallet.id);
+      if (exists) return prev.map((w) => (w.id === data.wallet.id ? data.wallet : w));
+      return [...prev, data.wallet];
+    });
+    setModalStatus({ type: "success", text: "Wallet connected & verified!" });
+    setTimeout(closeModal, 1500);
+  }, [modalLabel]);
+
   // ─── SOL: connect + sign + save in one flow ───
   const doSolConnect = useCallback(async () => {
     if (!solWallet.connected || !solWallet.publicKey) {
@@ -192,50 +212,21 @@ export default function WalletsPage() {
       return;
     }
     const address = solWallet.publicKey.toBase58();
-
-    // Check duplicate
-    if (wallets.some((w) => w.address === address)) {
-      setModalStatus({ type: "error", text: "This wallet is already added." });
-      return;
-    }
-
     setModalStatus({ type: "signing", text: "Please approve the signing request in your wallet…" });
     try {
-      const challengeRes = await fetch("/api/wallets/challenge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
-      });
-      const { message } = await challengeRes.json();
+      const nonceRes = await fetch("/api/wallets/connect");
+      const { nonce } = await nonceRes.json();
+      const message = `Sign to verify ownership of ${address} on Communiclaw.\nNonce: ${nonce}`;
 
       const msgBytes = new TextEncoder().encode(message);
       const sigBytes = await solWallet.signMessage(msgBytes);
       const signature = bs58.encode(sigBytes);
 
-      setModalStatus({ type: "saving" });
-      // Add wallet
-      const addRes = await fetch("/api/wallets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, chain: "SOL", label: modalLabel }),
-      });
-      const addData = await addRes.json();
-      if (!addRes.ok) throw new Error(addData.error ?? "Failed to add wallet");
-
-      // Verify immediately
-      await fetch("/api/wallets/verify-sig", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletId: addData.wallet.id, address, message, signature, chain: "SOL" }),
-      });
-
-      setWallets((prev) => [...prev, { ...addData.wallet, verified: true }]);
-      setModalStatus({ type: "success", text: "Wallet connected & verified!" });
-      setTimeout(closeModal, 1500);
+      await doConnect(address, "SOL", message, signature);
     } catch (err: any) {
-      setModalStatus({ type: "error", text: err?.message ?? "Signing cancelled" });
+      setModalStatus({ type: "error", text: err?.message ?? "Signing cancelled or failed" });
     }
-  }, [solWallet, wallets, modalLabel]);
+  }, [solWallet, modalLabel, doConnect]);
 
   // ─── BTC: select provider → connect → sign → save ───
   const doBtcConnect = useCallback(async (provider: string) => {
@@ -245,45 +236,20 @@ export default function WalletsPage() {
       const { address } = await connectBtcWallet(provider);
       setPendingBtcAddress(address);
 
-      if (wallets.some((w) => w.address === address)) {
-        setModalStatus({ type: "error", text: "This wallet is already added." });
-        return;
-      }
-
       setModalStatus({ type: "signing", text: "Please approve the signing request in your wallet…" });
 
-      const challengeRes = await fetch("/api/wallets/challenge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
-      });
-      const { message } = await challengeRes.json();
+      const nonceRes = await fetch("/api/wallets/connect");
+      const { nonce } = await nonceRes.json();
+      const message = `Sign to verify ownership of ${address} on Communiclaw.\nNonce: ${nonce}`;
 
       const signature = await signBtcMessage(provider, address, message);
 
-      setModalStatus({ type: "saving" });
-      const addRes = await fetch("/api/wallets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, chain: "BTC", label: modalLabel }),
-      });
-      const addData = await addRes.json();
-      if (!addRes.ok) throw new Error(addData.error ?? "Failed to add wallet");
-
-      await fetch("/api/wallets/verify-sig", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletId: addData.wallet.id, address, message, signature, chain: "BTC" }),
-      });
-
-      setWallets((prev) => [...prev, { ...addData.wallet, verified: true }]);
-      setModalStatus({ type: "success", text: "Bitcoin wallet connected & verified!" });
-      setTimeout(closeModal, 1500);
+      await doConnect(address, "BTC", message, signature);
     } catch (err: any) {
       setModalStatus({ type: "error", text: err?.message ?? "Connection failed" });
       setBtcProvider(null);
     }
-  }, [wallets, modalLabel]);
+  }, [modalLabel, doConnect]);
 
   async function removeWallet(walletId: string) {
     if (!confirm("Remove this wallet?")) return;
