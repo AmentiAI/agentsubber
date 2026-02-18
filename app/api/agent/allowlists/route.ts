@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
           },
           select: { campaignId: true },
         })
-      ).map((e) => e.campaignId)
+      ).map((e: { campaignId: string }) => e.campaignId)
     );
 
     const result = openCampaigns.map((c: (typeof openCampaigns)[number]) => ({
