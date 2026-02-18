@@ -225,11 +225,21 @@ model Community {
   logoUrl       String?
   bannerUrl     String?
   chain         Chain    @default(SOL)
-  twitterHandle String?
-  discordInvite String?
-  telegramLink  String?
-  websiteUrl    String?
-  memberCount   Int      @default(0)
+  twitterHandle    String?
+  discordInvite    String?
+  telegramLink     String?
+  websiteUrl       String?
+  instagramUrl     String?
+  youtubeUrl       String?
+  magicEdenUrl     String?
+  tensorUrl        String?
+  tags             String?    // comma-separated e.g. "NFT,Gaming,PFP"
+  announcementText String?    @db.Text
+  mintDate         String?    // stored as string e.g. "Q2 2025" or "2025-06-01"
+  mintPrice        String?    // e.g. "0.05 SOL" or "Free"
+  totalSupply      Int?
+  accentColor      String?    // hex e.g. "#8B5CF6"
+  memberCount      Int      @default(0)
   verified      Boolean  @default(false)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())

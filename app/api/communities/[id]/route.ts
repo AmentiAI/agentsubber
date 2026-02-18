@@ -79,6 +79,16 @@ export async function PATCH(
         discordInvite: body.discordInvite,
         telegramLink: body.telegramLink,
         websiteUrl: body.websiteUrl,
+        instagramUrl: body.instagramUrl,
+        youtubeUrl: body.youtubeUrl,
+        magicEdenUrl: body.magicEdenUrl,
+        tensorUrl: body.tensorUrl,
+        tags: body.tags,
+        announcementText: body.announcementText,
+        mintDate: body.mintDate,
+        mintPrice: body.mintPrice,
+        totalSupply: body.totalSupply !== undefined ? (body.totalSupply === "" || body.totalSupply === null ? null : Number(body.totalSupply)) : undefined,
+        accentColor: body.accentColor,
       },
     });
 

@@ -1060,8 +1060,18 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
     discordInvite: community.discordInvite ?? "",
     telegramLink: community.telegramLink ?? "",
     websiteUrl: community.websiteUrl ?? "",
+    instagramUrl: community.instagramUrl ?? "",
+    youtubeUrl: community.youtubeUrl ?? "",
+    magicEdenUrl: community.magicEdenUrl ?? "",
+    tensorUrl: community.tensorUrl ?? "",
     logoUrl: community.logoUrl ?? "",
     bannerUrl: community.bannerUrl ?? "",
+    tags: community.tags ?? "",
+    announcementText: community.announcementText ?? "",
+    mintDate: community.mintDate ?? "",
+    mintPrice: community.mintPrice ?? "",
+    totalSupply: community.totalSupply != null ? String(community.totalSupply) : "",
+    accentColor: community.accentColor ?? "#8B5CF6",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1073,7 +1083,10 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
       const res = await fetch(`/api/communities/${community.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          totalSupply: form.totalSupply !== "" ? Number(form.totalSupply) : null,
+        }),
       });
       if (res.ok) {
         setSaved(true);
@@ -1089,9 +1102,56 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
     <div className="max-w-2xl">
       <h2 className="text-lg font-bold text-white mb-6">Community Settings</h2>
       <form onSubmit={handleSave} className="space-y-5">
+
+        {/* ── Branding ── */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Basic Info</CardTitle>
+            <CardTitle className="text-sm">Branding</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Logo URL</label>
+              <Input
+                value={form.logoUrl}
+                onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                placeholder="https://..."
+              />
+              {form.logoUrl && (
+                <div className="mt-2">
+                  <img
+                    src={form.logoUrl}
+                    alt="Logo preview"
+                    className="w-20 h-20 rounded-xl object-cover border border-[rgb(40,40,55)]"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Banner URL</label>
+              <Input
+                value={form.bannerUrl}
+                onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
+                placeholder="https://..."
+              />
+              {form.bannerUrl && (
+                <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-[rgb(40,40,55)]">
+                  <img
+                    src={form.bannerUrl}
+                    alt="Banner preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Identity ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Identity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -1107,66 +1167,129 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
+                rows={5}
                 placeholder="Tell people what your community is about..."
               />
             </div>
             <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Logo URL</label>
+              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Tags</label>
               <Input
-                value={form.logoUrl}
-                onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                placeholder="https://..."
+                value={form.tags}
+                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                placeholder="e.g. NFT, PFP, Gaming, Bitcoin"
               />
+              <p className="text-xs text-[rgb(100,100,120)] mt-1">Comma-separated tags shown on your public page</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Collection Info ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Collection Info</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Total Supply</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.totalSupply}
+                  onChange={(e) => setForm({ ...form, totalSupply: e.target.value })}
+                  placeholder="e.g. 10000"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Mint Price</label>
+                <Input
+                  value={form.mintPrice}
+                  onChange={(e) => setForm({ ...form, mintPrice: e.target.value })}
+                  placeholder="e.g. 0.05 SOL"
+                />
+              </div>
             </div>
             <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Banner URL</label>
+              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Mint Date</label>
               <Input
-                value={form.bannerUrl}
-                onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
-                placeholder="https://..."
+                value={form.mintDate}
+                onChange={(e) => setForm({ ...form, mintDate: e.target.value })}
+                placeholder="e.g. Q2 2025 or June 2025"
               />
             </div>
           </CardContent>
         </Card>
 
+        {/* ── Social Links ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Social Links</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {[
+              { key: "twitterHandle", emoji: "🐦", label: "X (Twitter)", placeholder: "@handle (without @)" },
+              { key: "discordInvite", emoji: "💬", label: "Discord", placeholder: "https://discord.gg/..." },
+              { key: "telegramLink", emoji: "✈️", label: "Telegram", placeholder: "https://t.me/..." },
+              { key: "websiteUrl", emoji: "🌐", label: "Website", placeholder: "https://..." },
+              { key: "instagramUrl", emoji: "📸", label: "Instagram", placeholder: "https://instagram.com/..." },
+              { key: "youtubeUrl", emoji: "▶️", label: "YouTube", placeholder: "https://youtube.com/..." },
+              { key: "magicEdenUrl", emoji: "🟣", label: "Magic Eden", placeholder: "https://magiceden.io/..." },
+              { key: "tensorUrl", emoji: "⚡", label: "Tensor", placeholder: "https://tensor.trade/..." },
+            ].map(({ key, emoji, label, placeholder }) => (
+              <div key={key}>
+                <label className="text-xs text-[rgb(130,130,150)] mb-1 flex items-center gap-1.5 block">
+                  <span>{emoji}</span>
+                  <span>{label}</span>
+                </label>
+                <Input
+                  value={(form as any)[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  placeholder={placeholder}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* ── Appearance ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Appearance</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">X (Twitter) Handle</label>
-              <Input
-                value={form.twitterHandle}
-                onChange={(e) => setForm({ ...form, twitterHandle: e.target.value })}
-                placeholder="handle (without @)"
-              />
+              <label className="text-xs text-[rgb(130,130,150)] mb-2 block">Accent Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={form.accentColor}
+                  onChange={(e) => setForm({ ...form, accentColor: e.target.value })}
+                  className="w-10 h-10 rounded-lg cursor-pointer border border-[rgb(40,40,55)] bg-transparent"
+                />
+                <div
+                  className="w-10 h-10 rounded-lg border border-[rgb(40,40,55)]"
+                  style={{ backgroundColor: form.accentColor }}
+                />
+                <span className="text-sm text-white font-mono">{form.accentColor}</span>
+              </div>
+              <p className="text-xs text-[rgb(100,100,120)] mt-2">Used as highlight color on your public page</p>
             </div>
-            <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Discord Invite URL</label>
-              <Input
-                value={form.discordInvite}
-                onChange={(e) => setForm({ ...form, discordInvite: e.target.value })}
-                placeholder="https://discord.gg/..."
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Telegram Link</label>
-              <Input
-                value={form.telegramLink}
-                onChange={(e) => setForm({ ...form, telegramLink: e.target.value })}
-                placeholder="https://t.me/..."
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[rgb(130,130,150)] mb-1 block">Website URL</label>
-              <Input
-                value={form.websiteUrl}
-                onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Announcement ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Announcement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={form.announcementText}
+              onChange={(e) => setForm({ ...form, announcementText: e.target.value })}
+              rows={3}
+              placeholder="Pin an announcement to the top of your public page..."
+            />
+            <p className="text-xs text-[rgb(100,100,120)] mt-2">Shows as a banner on your public page. Leave blank to hide.</p>
           </CardContent>
         </Card>
 
