@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { postAllowlistAnnouncement } from "@/lib/discord";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -60,6 +61,25 @@ export async function POST(request: NextRequest) {
         chain: chain ?? community.chain,
       },
     });
+
+    // Discord announcement
+    const discordIntegration = await prisma.discordIntegration.findFirst({
+      where: { communityId },
+      include: { community: { select: { logoUrl: true } } },
+    });
+    if (discordIntegration?.webhookUrl) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agentsubber.vercel.app";
+      postAllowlistAnnouncement({
+        webhookUrl: discordIntegration.webhookUrl,
+        campaignName: name,
+        totalSpots: Number(totalSpots),
+        entryMethod: entryMethod ?? "FCFS",
+        entryUrl: `${appUrl}/c/${community.slug}/allowlist/${campaign.id}`,
+        communityName: community.name,
+        closesAt: closesAt ? new Date(closesAt) : null,
+        logoUrl: discordIntegration.community?.logoUrl,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error) {

@@ -115,15 +115,14 @@ export async function POST(
       }
     }
 
-    // ─── Discord: post winner announcement ───
-    if (giveaway.community.discordIntegration?.winnerChannelId) {
+    // ─── Discord: post winner announcement via webhook ───
+    if (giveaway.community.discordIntegration?.webhookUrl) {
       postWinnerAnnouncement({
-        channelId: giveaway.community.discordIntegration.winnerChannelId,
+        webhookUrl: giveaway.community.discordIntegration.webhookUrl,
         giveawayTitle: giveaway.title,
         winners: winnerEntries.map((e) => ({
           xHandle: e.user.xHandle,
           name: e.user.name,
-          walletAddress: e.walletAddress,
         })),
         communityName: giveaway.community.name,
       }).catch(() => {});

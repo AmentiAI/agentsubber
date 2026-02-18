@@ -84,23 +84,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Discord: announce giveaway if community has integration
-    if (process.env.DISCORD_BOT_TOKEN) {
-      const integration = await prisma.discordIntegration.findFirst({
-        where: { communityId },
-      });
-      if (integration?.giveawayChannelId) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://communiclaw.xyz";
-        postGiveawayAnnouncement({
-          channelId: integration.giveawayChannelId,
-          giveawayTitle: title,
-          prize,
-          winners: totalWinners ?? 1,
-          endAt: new Date(endAt),
-          entryUrl: `${appUrl}/c/${community.slug}/giveaways/${giveaway.id}`,
-          communityName: community.name,
-        }).catch(() => {});
-      }
+    // Discord: announce giveaway via webhook if community has integration
+    const integration = await prisma.discordIntegration.findFirst({
+      where: { communityId },
+      include: { community: { select: { logoUrl: true } } },
+    });
+    if (integration?.webhookUrl) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agentsubber.vercel.app";
+      postGiveawayAnnouncement({
+        webhookUrl: integration.webhookUrl,
+        giveawayTitle: title,
+        prize,
+        winners: totalWinners ?? 1,
+        endAt: new Date(endAt),
+        entryUrl: `${appUrl}/c/${community.slug}/giveaways/${giveaway.id}`,
+        communityName: community.name,
+        logoUrl: integration.community?.logoUrl,
+      }).catch(() => {});
     }
 
     return NextResponse.json({ giveaway }, { status: 201 });

@@ -15,6 +15,7 @@ import {
   Globe,
   Loader2,
   X,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -304,11 +305,24 @@ export function PostComposer({
   const [content, setContent] = useState("");
   const [communityId, setCommunityId] = useState<string>(fixedCommunity?.id ?? communities?.[0]?.id ?? "");
   const [imageUrl, setImageUrl] = useState("");
-  const [showImageInput, setShowImageInput] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const maxChars = 2000;
   const remaining = maxChars - content.length;
+
+  const handleImageFile = (file: File | null) => {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { alert("Image too large (max 8 MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setImageUrl(dataUrl);
+      setImagePreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const autoResize = () => {
     const el = textareaRef.current;
@@ -336,7 +350,8 @@ export function PostComposer({
         onPost(data.post);
         setContent("");
         setImageUrl("");
-        setShowImageInput(false);
+        setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         if (textareaRef.current) textareaRef.current.style.height = "auto";
       }
     } finally {
@@ -368,21 +383,27 @@ export function PostComposer({
                 className="w-full bg-transparent text-white text-base placeholder:text-[rgb(70,70,90)] focus:outline-none resize-none leading-relaxed"
               />
 
-              {showImageInput && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://... (image URL)"
-                    className="flex-1 px-3 py-2 rounded-lg bg-[rgb(20,20,28)] border border-[rgb(40,40,55)] text-white text-sm placeholder:text-[rgb(70,70,90)] focus:outline-none focus:border-purple-500"
-                  />
-                  <button type="button" onClick={() => { setShowImageInput(false); setImageUrl(""); }}
-                    className="p-2 rounded-lg text-[rgb(80,80,100)] hover:text-white transition-colors">
+              {/* Image preview */}
+              {imagePreview && (
+                <div className="relative rounded-xl overflow-hidden border border-[rgb(40,40,55)]">
+                  <img src={imagePreview} alt="preview" className="w-full max-h-64 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setImageUrl(""); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageFile(e.target.files?.[0] ?? null)}
+              />
 
               {/* Community row — fixed if community board, picker if global */}
               {fixedCommunity ? (
@@ -409,10 +430,11 @@ export function PostComposer({
               <div className="flex items-center justify-between pt-2 border-t border-[rgb(30,30,40)]">
                 <button
                   type="button"
-                  onClick={() => setShowImageInput((v) => !v)}
-                  className={`p-2 rounded-lg transition-colors ${showImageInput ? "text-purple-400 bg-purple-900/20" : "text-[rgb(100,100,120)] hover:text-purple-400 hover:bg-purple-900/15"}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`p-2 rounded-lg transition-colors ${imagePreview ? "text-purple-400 bg-purple-900/20" : "text-[rgb(100,100,120)] hover:text-purple-400 hover:bg-purple-900/15"}`}
+                  title="Attach image"
                 >
-                  <ImageIcon className="w-4 h-4" />
+                  <Upload className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-3">
                   {content.length > maxChars * 0.8 && (

@@ -32,12 +32,15 @@ import {
   Download,
   Upload,
   X,
+  MessageSquare,
+  Send,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { formatNumber, timeUntil } from "@/lib/utils";
 import { format } from "date-fns";
 
-type Tab = "overview" | "giveaways" | "allowlists" | "presales" | "collabs" | "settings";
+type Tab = "overview" | "giveaways" | "allowlists" | "presales" | "collabs" | "settings" | "discord";
 
 export default function ManageCommunityPage() {
   const params = useParams();
@@ -83,6 +86,7 @@ export default function ManageCommunityPage() {
     { id: "allowlists", label: "Allowlists", icon: <List className="w-4 h-4" /> },
     { id: "presales", label: "Presales", icon: <ShoppingBag className="w-4 h-4" /> },
     { id: "collabs", label: "Collabs", icon: <Handshake className="w-4 h-4" /> },
+    { id: "discord", label: "Discord", icon: <MessageSquare className="w-4 h-4" /> },
     { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
   ];
 
@@ -177,6 +181,7 @@ export default function ManageCommunityPage() {
         )}
         {activeTab === "presales" && <PresalesTab community={community} />}
         {activeTab === "collabs" && <CollabsTab community={community} />}
+        {activeTab === "discord" && <DiscordTab community={community} />}
         {activeTab === "settings" && (
           <SettingsTab community={community} onSaved={fetchCommunity} />
         )}
@@ -1455,6 +1460,157 @@ function SettingsTab({ community, onSaved }: { community: any; onSaved: () => vo
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ─── Discord Tab ─── */
+function DiscordTab({ community }: { community: any }) {
+  const [webhookUrl, setWebhookUrl] = useState(community.discordIntegration?.webhookUrl ?? "");
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok?: boolean; error?: string } | null>(null);
+  const isConnected = !!community.discordIntegration?.webhookUrl;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/discord/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId: community.id, webhookUrl }),
+      });
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!webhookUrl) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/discord/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl, communityName: community.name }),
+      });
+      const data = await res.json();
+      setTestResult(res.ok ? { ok: true } : { error: data.error ?? "Failed" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Disconnect Discord integration?")) return;
+    await fetch("/api/discord/setup", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ communityId: community.id }),
+    });
+    setWebhookUrl("");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-white mb-1">Discord Integration</h2>
+        <p className="text-sm text-[rgb(130,130,150)]">
+          Connect a Discord webhook to automatically post giveaway announcements, allowlist openings, and presale launches to your server.
+        </p>
+      </div>
+
+      {/* Status banner */}
+      {isConnected && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-900/20 border border-green-500/30">
+          <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+          <span className="text-sm font-medium text-green-300">Discord webhook connected</span>
+          <button onClick={handleDisconnect} className="ml-auto text-xs text-[rgb(130,130,150)] hover:text-red-400 transition-colors">
+            Disconnect
+          </button>
+        </div>
+      )}
+
+      {/* How to create a webhook */}
+      <Card className="border-[rgb(35,35,50)]">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-indigo-400" />
+            How to create a Discord webhook
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-[rgb(160,160,180)]">
+          <div className="flex items-start gap-2"><span className="text-purple-400 font-bold shrink-0">1.</span>Open Discord → your server → the channel you want posts in</div>
+          <div className="flex items-start gap-2"><span className="text-purple-400 font-bold shrink-0">2.</span>Click the ⚙️ gear icon on the channel → <strong className="text-white">Integrations</strong> → <strong className="text-white">Webhooks</strong></div>
+          <div className="flex items-start gap-2"><span className="text-purple-400 font-bold shrink-0">3.</span>Click <strong className="text-white">New Webhook</strong>, give it a name (e.g. "Communiclaw"), copy the URL</div>
+          <div className="flex items-start gap-2"><span className="text-purple-400 font-bold shrink-0">4.</span>Paste it below and click Save</div>
+        </CardContent>
+      </Card>
+
+      {/* Webhook URL input */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Webhook URL</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <input
+            type="url"
+            value={webhookUrl}
+            onChange={(e) => setWebhookUrl(e.target.value)}
+            placeholder="https://discord.com/api/webhooks/..."
+            className="w-full px-4 py-3 rounded-xl bg-[rgb(10,10,15)] border border-[rgb(40,40,55)] text-white text-sm placeholder:text-[rgb(70,70,90)] focus:outline-none focus:border-purple-500"
+          />
+
+          {testResult && (
+            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${testResult.ok ? "bg-green-900/20 text-green-300 border border-green-500/30" : "bg-red-900/20 text-red-300 border border-red-500/30"}`}>
+              {testResult.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              {testResult.ok ? "Test message sent! Check your Discord channel." : testResult.error}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button variant="gradient" onClick={handleSave} disabled={!webhookUrl || saving} className="gap-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              {saved ? "Saved!" : "Save Webhook"}
+            </Button>
+            <Button variant="secondary" onClick={handleTest} disabled={!webhookUrl || testing} className="gap-2">
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Test
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* What gets posted */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            Auto-posted to Discord
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[
+            { icon: "🎉", label: "New Giveaway", desc: "Posted when you create a giveaway — includes prize, winner count, end time, and entry link" },
+            { icon: "📋", label: "Allowlist Open", desc: "Posted when you create an allowlist campaign — includes spots available and entry link" },
+            { icon: "🛒", label: "Presale Launch", desc: "Posted when a presale goes live — includes price, supply, and buy link" },
+            { icon: "🏆", label: "Winners Drawn", desc: "Posted when giveaway winners are drawn — tags all winners publicly" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-start gap-3">
+              <span className="text-xl shrink-0">{item.icon}</span>
+              <div>
+                <div className="text-sm font-semibold text-white">{item.label}</div>
+                <div className="text-xs text-[rgb(130,130,150)]">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

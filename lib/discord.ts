@@ -1,139 +1,165 @@
-import { Client, GatewayIntentBits, EmbedBuilder, TextChannel } from "discord.js";
-
-let _client: Client | null = null;
-let _ready = false;
-
 /**
- * Returns a ready Discord.js Client.
- * Reuses the singleton across hot-reloads in development.
+ * Discord webhook helper — no bot token, no long-running process.
+ * Community owners paste a webhook URL; we POST embeds to it.
  */
-async function getDiscordClient(): Promise<Client> {
-  const g = globalThis as any;
 
-  if (g._discordClient && g._discordReady) {
-    return g._discordClient;
-  }
-
-  if (!process.env.DISCORD_BOT_TOKEN) {
-    throw new Error("DISCORD_BOT_TOKEN is not set");
-  }
-
-  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
-  await new Promise<void>((resolve, reject) => {
-    client.once("ready", () => resolve());
-    client.once("error", reject);
-    client.login(process.env.DISCORD_BOT_TOKEN).catch(reject);
-  });
-
-  g._discordClient = client;
-  g._discordReady = true;
-  return client;
+export interface DiscordEmbed {
+  title?: string;
+  description?: string;
+  color?: number;
+  url?: string;
+  thumbnail?: { url: string };
+  fields?: { name: string; value: string; inline?: boolean }[];
+  footer?: { text: string; icon_url?: string };
+  timestamp?: string;
 }
 
-/**
- * Post a giveaway announcement to a Discord channel.
- */
+export async function sendWebhook(
+  webhookUrl: string,
+  content: string,
+  embeds: DiscordEmbed[] = []
+): Promise<boolean> {
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, embeds }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("[Discord webhook] failed:", err);
+    return false;
+  }
+}
+
+/* ── Announcement helpers ── */
+
 export async function postGiveawayAnnouncement({
-  channelId,
+  webhookUrl,
   giveawayTitle,
   prize,
   winners,
   endAt,
   entryUrl,
   communityName,
+  logoUrl,
 }: {
-  channelId: string;
+  webhookUrl: string;
   giveawayTitle: string;
   prize: string;
   winners: number;
   endAt: Date;
   entryUrl: string;
   communityName: string;
+  logoUrl?: string | null;
 }) {
-  try {
-    const client = await getDiscordClient();
-    const channel = await client.channels.fetch(channelId) as TextChannel | null;
-    if (!channel?.isTextBased()) return;
-
-    const embed = new EmbedBuilder()
-      .setColor(0x8b5cf6)
-      .setTitle(`🎉 New Giveaway: ${giveawayTitle}`)
-      .setDescription(`**${communityName}** is hosting a giveaway!`)
-      .addFields(
-        { name: "Prize", value: prize, inline: true },
-        { name: "Winners", value: `${winners}`, inline: true },
-        { name: "Ends", value: `<t:${Math.floor(endAt.getTime() / 1000)}:R>`, inline: true }
-      )
-      .setFooter({ text: "Communiclaw · Web3 Community Platform" })
-      .setTimestamp();
-
-    await channel.send({
-      content: `🎁 **Giveaway Alert!** Enter now → ${entryUrl}`,
-      embeds: [embed],
-    });
-  } catch (err) {
-    console.error("[Discord] postGiveawayAnnouncement failed:", err);
-  }
+  const embed: DiscordEmbed = {
+    title: `🎉 New Giveaway: ${giveawayTitle}`,
+    description: `**${communityName}** is giving away **${prize}**!\n\n👉 [Enter now](${entryUrl})`,
+    color: 0x8b5cf6,
+    fields: [
+      { name: "Prize", value: prize, inline: true },
+      { name: "Winners", value: `${winners}`, inline: true },
+      { name: "Ends", value: `<t:${Math.floor(endAt.getTime() / 1000)}:R>`, inline: true },
+    ],
+    footer: { text: "Communiclaw · Web3 Community Platform" },
+    timestamp: new Date().toISOString(),
+  };
+  if (logoUrl?.startsWith("http")) embed.thumbnail = { url: logoUrl };
+  return sendWebhook(webhookUrl, `🎁 **Giveaway Alert!** Enter now → ${entryUrl}`, [embed]);
 }
 
-/**
- * Post winner announcement to a Discord channel.
- */
+export async function postAllowlistAnnouncement({
+  webhookUrl,
+  campaignName,
+  totalSpots,
+  entryMethod,
+  entryUrl,
+  communityName,
+  closesAt,
+  logoUrl,
+}: {
+  webhookUrl: string;
+  campaignName: string;
+  totalSpots: number;
+  entryMethod: string;
+  entryUrl: string;
+  communityName: string;
+  closesAt?: Date | null;
+  logoUrl?: string | null;
+}) {
+  const embed: DiscordEmbed = {
+    title: `📋 Allowlist Open: ${campaignName}`,
+    description: `**${communityName}** allowlist is now open!\n\n👉 [Secure your spot](${entryUrl})`,
+    color: 0x6366f1,
+    fields: [
+      { name: "Total Spots", value: `${totalSpots}`, inline: true },
+      { name: "Method", value: entryMethod, inline: true },
+      ...(closesAt ? [{ name: "Closes", value: `<t:${Math.floor(closesAt.getTime() / 1000)}:R>`, inline: true }] : []),
+    ],
+    footer: { text: "Communiclaw · Web3 Community Platform" },
+    timestamp: new Date().toISOString(),
+  };
+  if (logoUrl?.startsWith("http")) embed.thumbnail = { url: logoUrl };
+  return sendWebhook(webhookUrl, `📋 **Allowlist Alert!** Grab your spot → ${entryUrl}`, [embed]);
+}
+
+export async function postPresaleAnnouncement({
+  webhookUrl,
+  presaleName,
+  priceSOL,
+  priceBTC,
+  totalSupply,
+  entryUrl,
+  communityName,
+  logoUrl,
+}: {
+  webhookUrl: string;
+  presaleName: string;
+  priceSOL?: number | null;
+  priceBTC?: number | null;
+  totalSupply: number;
+  entryUrl: string;
+  communityName: string;
+  logoUrl?: string | null;
+}) {
+  const price = priceSOL ? `${priceSOL} SOL` : priceBTC ? `${priceBTC} BTC` : "TBA";
+  const embed: DiscordEmbed = {
+    title: `🛒 Presale Live: ${presaleName}`,
+    description: `**${communityName}** presale is now active!\n\n👉 [Buy now](${entryUrl})`,
+    color: 0x10b981,
+    fields: [
+      { name: "Price", value: price, inline: true },
+      { name: "Total Supply", value: `${totalSupply}`, inline: true },
+    ],
+    footer: { text: "Communiclaw · Web3 Community Platform" },
+    timestamp: new Date().toISOString(),
+  };
+  if (logoUrl?.startsWith("http")) embed.thumbnail = { url: logoUrl };
+  return sendWebhook(webhookUrl, `🛒 **Presale Alert!** Buy now → ${entryUrl}`, [embed]);
+}
+
 export async function postWinnerAnnouncement({
-  channelId,
+  webhookUrl,
   giveawayTitle,
   winners,
   communityName,
 }: {
-  channelId: string;
+  webhookUrl: string;
   giveawayTitle: string;
-  winners: Array<{ xHandle?: string | null; name?: string | null; walletAddress?: string | null }>;
+  winners: Array<{ xHandle?: string | null; name?: string | null }>;
   communityName: string;
 }) {
-  try {
-    const client = await getDiscordClient();
-    const channel = await client.channels.fetch(channelId) as TextChannel | null;
-    if (!channel?.isTextBased()) return;
+  const winnerList = winners
+    .map((w, i) => `${i + 1}. **${w.xHandle ? `@${w.xHandle}` : w.name ?? "Anonymous"}**`)
+    .join("\n");
 
-    const winnerList = winners
-      .map((w, i) => {
-        const id = w.xHandle ? `@${w.xHandle}` : w.name ?? "Anonymous";
-        return `${i + 1}. **${id}**`;
-      })
-      .join("\n");
-
-    const embed = new EmbedBuilder()
-      .setColor(0xf59e0b)
-      .setTitle(`🏆 Giveaway Winners: ${giveawayTitle}`)
-      .setDescription(winnerList)
-      .setFooter({ text: `${communityName} · Communiclaw` })
-      .setTimestamp();
-
-    await channel.send({ embeds: [embed] });
-  } catch (err) {
-    console.error("[Discord] postWinnerAnnouncement failed:", err);
-  }
-}
-
-/**
- * Assign a Discord role to a user (for winner roles).
- */
-export async function assignWinnerRole({
-  guildId,
-  discordUserId,
-  roleId,
-}: {
-  guildId: string;
-  discordUserId: string;
-  roleId: string;
-}) {
-  try {
-    const client = await getDiscordClient();
-    const guild = await client.guilds.fetch(guildId);
-    const member = await guild.members.fetch(discordUserId);
-    await member.roles.add(roleId);
-  } catch (err) {
-    console.error("[Discord] assignWinnerRole failed:", err);
-  }
+  const embed: DiscordEmbed = {
+    title: `🏆 Winners Drawn: ${giveawayTitle}`,
+    description: winnerList,
+    color: 0xf59e0b,
+    footer: { text: `${communityName} · Communiclaw` },
+    timestamp: new Date().toISOString(),
+  };
+  return sendWebhook(webhookUrl, `🏆 **Winners announced for ${giveawayTitle}!**`, [embed]);
 }

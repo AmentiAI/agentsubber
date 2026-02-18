@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { postPresaleAnnouncement } from "@/lib/discord";
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,6 +109,25 @@ export async function POST(request: NextRequest) {
         status,
       },
     });
+
+    // Discord announcement
+    const discordInt = await prisma.discordIntegration.findFirst({
+      where: { communityId },
+      include: { community: { select: { logoUrl: true, slug: true, name: true } } },
+    });
+    if (discordInt?.webhookUrl) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agentsubber.vercel.app";
+      postPresaleAnnouncement({
+        webhookUrl: discordInt.webhookUrl,
+        presaleName: name,
+        priceSOL: priceSOL ?? null,
+        priceBTC: priceBTC ?? null,
+        totalSupply,
+        entryUrl: `${appUrl}/c/${discordInt.community?.slug}/presale/${presale.id}`,
+        communityName: discordInt.community?.name ?? community.name,
+        logoUrl: discordInt.community?.logoUrl,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ presale }, { status: 201 });
   } catch (err) {
