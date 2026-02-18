@@ -105,6 +105,8 @@ model User {
   presaleOrders    PresaleOrder[]
   trackerAlerts    WalletTrackerAlert[]
   notifications    Notification[]
+  paymentRecords   PaymentRecord[]
+  chatMessages     ChatMessage[]
 }
 
 model Account {
@@ -518,4 +520,36 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// CRYPTO PAYMENTS
+// ─────────────────────────────────────────────
+
+model PaymentRecord {
+  id          String    @id @default(cuid())
+  userId      String
+  plan        String    // "PRO" | "ELITE"
+  chain       String    // "BTC" | "SOL"
+  txHash      String?   // transaction hash once confirmed
+  amountUSD   Float
+  status      String    @default("PENDING") // PENDING | CONFIRMED | FAILED
+  memo        String    @unique // unique payment memo/reference
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// GLOBAL CHAT
+// ─────────────────────────────────────────────
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

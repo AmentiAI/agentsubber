@@ -21,6 +21,12 @@ import {
 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
 
+function NavPlanBadge({ plan }: { plan?: string }) {
+  if (!plan || plan === "FREE") return null;
+  if (plan === "ELITE") return <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 font-bold border border-yellow-500/30">👑 ELITE</span>;
+  return <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">⚡ PRO</span>;
+}
+
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -121,8 +127,11 @@ export default function Navbar() {
                       />
                       <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-[rgb(40,40,55)] bg-[rgb(16,16,22)] shadow-xl z-50 overflow-hidden">
                         <div className="p-3 border-b border-[rgb(40,40,55)]">
-                          <div className="text-sm font-medium text-white">
-                            {user?.name ?? "User"}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-white">
+                              {user?.name ?? "User"}
+                            </div>
+                            <NavPlanBadge plan={plan} />
                           </div>
                           <div className="text-xs text-[rgb(130,130,150)]">
                             {user?.xHandle ? `@${user.xHandle}` : user?.email}

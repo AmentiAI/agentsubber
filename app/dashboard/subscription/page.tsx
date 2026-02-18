@@ -14,6 +14,9 @@ import {
   Star,
   Loader2,
   AlertTriangle,
+  Bitcoin,
+  X,
+  Copy,
 } from "lucide-react";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -70,11 +73,189 @@ const PLANS = [
   },
 ];
 
+interface CryptoPayState {
+  plan: string;
+  chain: "BTC" | "SOL" | null;
+  paymentId: string | null;
+  amount: string | null;
+  address: string | null;
+  memo: string | null;
+  loadingChain: "BTC" | "SOL" | null;
+  verifying: boolean;
+  verifyResult: { confirmed: boolean; message?: string; txHash?: string } | null;
+}
+
+function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }) {
+  const [state, setState] = useState<CryptoPayState>({
+    plan,
+    chain: null,
+    paymentId: null,
+    amount: null,
+    address: null,
+    memo: null,
+    loadingChain: null,
+    verifying: false,
+    verifyResult: null,
+  });
+  const [copied, setCopied] = useState(false);
+
+  async function selectChain(chain: "BTC" | "SOL") {
+    setState(s => ({ ...s, loadingChain: chain, verifyResult: null }));
+    try {
+      const res = await fetch("/api/billing/crypto-pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, chain }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setState(s => ({
+          ...s,
+          chain,
+          paymentId: data.payment.id,
+          amount: data.amount,
+          address: data.address,
+          memo: data.memo,
+          loadingChain: null,
+        }));
+      } else {
+        setState(s => ({ ...s, loadingChain: null }));
+        alert(data.error ?? "Failed to create payment");
+      }
+    } catch {
+      setState(s => ({ ...s, loadingChain: null }));
+    }
+  }
+
+  async function verifyPayment() {
+    if (!state.paymentId) return;
+    setState(s => ({ ...s, verifying: true, verifyResult: null }));
+    // Poll up to 3 times with 5s delay
+    for (let i = 0; i < 3; i++) {
+      if (i > 0) await new Promise(r => setTimeout(r, 5000));
+      try {
+        const res = await fetch("/api/billing/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: state.paymentId }),
+        });
+        const data = await res.json();
+        if (data.confirmed) {
+          setState(s => ({ ...s, verifying: false, verifyResult: data }));
+          return;
+        }
+        if (i === 2) {
+          setState(s => ({ ...s, verifying: false, verifyResult: data }));
+        }
+      } catch {}
+    }
+    setState(s => ({ ...s, verifying: false }));
+  }
+
+  function copyAddr() {
+    if (state.address) {
+      navigator.clipboard.writeText(state.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md bg-[rgb(16,16,22)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgb(40,40,55)]">
+          <div className="text-base font-bold text-white">Pay with Crypto — {plan}</div>
+          <button onClick={onClose} className="text-[rgb(130,130,150)] hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-5">
+          {/* Chain selector */}
+          {!state.chain && (
+            <div>
+              <div className="text-sm text-[rgb(130,130,150)] mb-3">Select payment chain:</div>
+              <div className="grid grid-cols-2 gap-3">
+                {(["BTC", "SOL"] as const).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => selectChain(c)}
+                    disabled={state.loadingChain !== null}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:border-purple-500/50 ${
+                      c === "BTC" ? "border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10 text-orange-400" : "border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 text-purple-400"
+                    }`}
+                  >
+                    {state.loadingChain === c ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <span className="text-2xl">{c === "BTC" ? "₿" : "◎"}</span>
+                    )}
+                    <span className="text-sm font-bold">{c === "BTC" ? "Bitcoin" : "Solana"}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Payment details */}
+          {state.chain && state.amount && state.address && (
+            <>
+              <div className="bg-[rgb(20,20,28)] rounded-xl p-5 border border-[rgb(40,40,55)]">
+                <div className="text-xs text-[rgb(130,130,150)] mb-1">Send exactly</div>
+                <div className="text-2xl font-black text-white mb-4">{state.amount} {state.chain}</div>
+                <div className="text-xs text-[rgb(130,130,150)] mb-1">To address</div>
+                <div className="font-mono text-sm text-white bg-[rgb(30,30,40)] p-3 rounded-lg break-all mb-3">{state.address}</div>
+                <Button onClick={copyAddr} variant="secondary" size="sm" className="w-full">
+                  {copied ? <><CheckCircle className="w-3.5 h-3.5 mr-1 text-green-400" /> Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1" /> Copy Address</>}
+                </Button>
+                <div className="text-xs text-[rgb(130,130,150)] mt-3 text-center">
+                  ⚡ Payment auto-detects within 1-5 minutes after confirmation
+                </div>
+              </div>
+
+              {/* Verify result */}
+              {state.verifyResult && (
+                <div className={`p-3 rounded-lg text-sm ${state.verifyResult.confirmed ? "bg-green-500/10 border border-green-500/20 text-green-300" : "bg-yellow-500/10 border border-yellow-500/20 text-yellow-300"}`}>
+                  {state.verifyResult.confirmed
+                    ? `✓ Payment confirmed! Your ${plan} plan is now active. TX: ${state.verifyResult.txHash?.slice(0, 12)}...`
+                    : state.verifyResult.message ?? "Payment not detected yet."}
+                </div>
+              )}
+
+              {!state.verifyResult?.confirmed && (
+                <Button
+                  variant="gradient"
+                  className="w-full"
+                  onClick={verifyPayment}
+                  disabled={state.verifying}
+                >
+                  {state.verifying ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Checking (up to 15s)...</>
+                  ) : (
+                    "I've sent the payment"
+                  )}
+                </Button>
+              )}
+
+              <button
+                onClick={() => setState(s => ({ ...s, chain: null, paymentId: null, amount: null, address: null, memo: null, verifyResult: null }))}
+                className="w-full text-xs text-[rgb(130,130,150)] hover:text-white text-center"
+              >
+                ← Change chain
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SubscriptionContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [cryptoPayPlan, setCryptoPayPlan] = useState<string | null>(null);
   const successParam = searchParams.get("success");
 
   const user = session?.user as any;
@@ -109,6 +290,12 @@ function SubscriptionContent() {
   return (
     <div className="min-h-screen">
       <Navbar />
+      {cryptoPayPlan && (
+        <CryptoPayPanel
+          plan={cryptoPayPlan}
+          onClose={() => setCryptoPayPlan(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-8">
           <DashboardSidebar />
@@ -211,22 +398,34 @@ function SubscriptionContent() {
                         {isCurrent ? "Current Plan" : "Free"}
                       </Button>
                     ) : (
-                      <Button
-                        variant={isCurrent ? "secondary" : "gradient"}
-                        className="w-full"
-                        disabled={isCurrent || loading !== null}
-                        onClick={() => subscribe(plan.key as "PRO" | "ELITE")}
-                      >
-                        {loading === plan.key ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isCurrent ? (
-                          "Current Plan"
-                        ) : isHigher ? (
-                          `Upgrade to ${plan.name}`
-                        ) : (
-                          `Downgrade to ${plan.name}`
+                      <div className="space-y-2">
+                        <Button
+                          variant={isCurrent ? "secondary" : "gradient"}
+                          className="w-full"
+                          disabled={isCurrent || loading !== null}
+                          onClick={() => subscribe(plan.key as "PRO" | "ELITE")}
+                        >
+                          {loading === plan.key ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : isCurrent ? (
+                            "Current Plan"
+                          ) : isHigher ? (
+                            `Upgrade to ${plan.name}`
+                          ) : (
+                            `Downgrade to ${plan.name}`
+                          )}
+                        </Button>
+                        {!isCurrent && (
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2 border-[rgb(60,60,80)] text-[rgb(180,180,200)] hover:border-purple-500/50 hover:text-white text-sm"
+                            onClick={() => setCryptoPayPlan(plan.key)}
+                          >
+                            <Bitcoin className="w-4 h-4 text-orange-400" />
+                            Pay with Crypto (BTC/SOL)
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     )}
                   </div>
                 );

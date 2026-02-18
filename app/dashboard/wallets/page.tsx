@@ -15,9 +15,13 @@ import {
   CheckCircle,
   Loader2,
   Star,
-  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+// @ts-ignore
+import bs58 from "bs58";
 
 interface WalletRecord {
   id: string;
@@ -37,6 +41,10 @@ export default function WalletsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({ address: "", chain: "SOL", label: "" });
   const [error, setError] = useState("");
+  const [verifying, setVerifying] = useState<string | null>(null);
+  const [verifyMsg, setVerifyMsg] = useState<{ id: string; type: "success" | "error"; text: string } | null>(null);
+
+  const solWallet = useWallet();
 
   useEffect(() => {
     fetch("/api/wallets")
@@ -99,6 +107,52 @@ export default function WalletsPage() {
     }
   }
 
+  async function verifySOLWallet(wallet: WalletRecord) {
+    if (!solWallet.signMessage) {
+      setVerifyMsg({ id: wallet.id, type: "error", text: "Wallet does not support message signing. Please connect a compatible Solana wallet." });
+      return;
+    }
+    if (!solWallet.connected || solWallet.publicKey?.toBase58() !== wallet.address) {
+      setVerifyMsg({ id: wallet.id, type: "error", text: `Please connect the wallet with address ${truncateAddress(wallet.address, 6)} using the Connect button above.` });
+      return;
+    }
+    setVerifying(wallet.id);
+    setVerifyMsg(null);
+    try {
+      // 1. Get challenge
+      const challengeRes = await fetch("/api/wallets/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: wallet.address }),
+      });
+      const { message } = await challengeRes.json();
+
+      // 2. Sign the message
+      const msgBytes = new TextEncoder().encode(message);
+      const sigBytes = await solWallet.signMessage(msgBytes);
+      const signature = bs58.encode(sigBytes);
+
+      // 3. Verify signature on server
+      const verifyRes = await fetch("/api/wallets/verify-sig", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletId: wallet.id, address: wallet.address, message, signature, chain: "SOL" }),
+      });
+      const verifyData = await verifyRes.json();
+
+      if (verifyRes.ok && verifyData.success) {
+        setWallets((prev) => prev.map((w) => w.id === wallet.id ? { ...w, verified: true } : w));
+        setVerifyMsg({ id: wallet.id, type: "success", text: "✓ Wallet verified successfully!" });
+      } else {
+        setVerifyMsg({ id: wallet.id, type: "error", text: verifyData.error ?? "Verification failed" });
+      }
+    } catch (err: any) {
+      setVerifyMsg({ id: wallet.id, type: "error", text: err?.message ?? "Signing cancelled or failed" });
+    } finally {
+      setVerifying(null);
+    }
+  }
+
   const chainColors: Record<string, string> = {
     SOL: "text-purple-400",
     BTC: "text-orange-400",
@@ -132,12 +186,13 @@ export default function WalletsPage() {
               </Button>
             </div>
 
-            <div className="mb-5 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-300">
-                Paste your wallet address below. On-chain signature verification coming soon.
-                Only verified wallets will be usable for allowlists requiring proof of ownership.
-              </p>
+            {/* Solana Wallet Connect */}
+            <div className="mb-5 p-4 rounded-xl bg-[rgb(20,20,28)] border border-[rgb(40,40,55)] flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-white mb-0.5">Connect Solana Wallet</div>
+                <div className="text-xs text-[rgb(130,130,150)]">Connect to sign & verify ownership of your Solana wallets</div>
+              </div>
+              <WalletMultiButton style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)", borderRadius: "10px", fontSize: "13px", height: "38px" }} />
             </div>
 
             {showForm && (
@@ -270,9 +325,32 @@ export default function WalletsPage() {
                                 {wallet.label}
                               </div>
                             )}
+                            {/* Verify message */}
+                            {verifyMsg?.id === wallet.id && (
+                              <div className={`text-xs mt-1 ${verifyMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                                {verifyMsg.text}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                          {/* SOL verify button */}
+                          {wallet.chain === "SOL" && !wallet.verified && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => verifySOLWallet(wallet)}
+                              disabled={verifying === wallet.id}
+                              className="text-xs gap-1 border-purple-500/40 text-purple-400 hover:bg-purple-500/10"
+                            >
+                              {verifying === wallet.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="w-3 h-3" />
+                              )}
+                              Sign & Verify
+                            </Button>
+                          )}
                           {!wallet.isPrimary && (
                             <Button
                               variant="ghost"
