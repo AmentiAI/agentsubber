@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get open campaigns (filledSpots < totalSpots) - filter manually
-    const openCampaigns = campaigns.filter((c) => c.filledSpots < c.totalSpots);
+    const openCampaigns = campaigns.filter((c: (typeof campaigns)[number]) => c.filledSpots < c.totalSpots);
 
     // Check which ones the user already entered
     const userWallets = agent.user.wallets.map((w: any) => w.address);
