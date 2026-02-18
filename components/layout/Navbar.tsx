@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,8 +19,13 @@ import {
   Bot,
   Calendar,
   Rss,
+  Trophy,
+  Gift,
+  Handshake,
+  Info,
 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 function NavPlanBadge({ plan }: { plan?: string }) {
   if (!plan || plan === "FREE") return null;
@@ -28,13 +33,55 @@ function NavPlanBadge({ plan }: { plan?: string }) {
   return <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">⚡ PRO</span>;
 }
 
+function NotifIcon({ type }: { type: string }) {
+  if (type === "WIN") return <Trophy className="w-4 h-4 text-yellow-400" />;
+  if (type === "COLLAB") return <Handshake className="w-4 h-4 text-purple-400" />;
+  if (type === "GIVEAWAY") return <Gift className="w-4 h-4 text-pink-400" />;
+  return <Info className="w-4 h-4 text-indigo-400" />;
+}
+
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const user = session?.user as any;
   const plan = user?.plan ?? "FREE";
+
+  // Fetch notifications + poll every 60s
+  useEffect(() => {
+    if (!session?.user) return;
+    const load = () =>
+      fetch("/api/notifications?unread=false")
+        .then((r) => r.json())
+        .then((d) => {
+          setNotifications((d.notifications ?? []).slice(0, 8));
+          setUnreadCount(d.unreadCount ?? 0);
+        })
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [session]);
+
+  // Mark all read when dropdown opens
+  const openNotifs = () => {
+    setNotifOpen(true);
+    if (unreadCount > 0) {
+      fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markAll: true }),
+      }).then(() => {
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      });
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-[rgb(40,40,55)]">
@@ -85,10 +132,51 @@ export default function Navbar() {
             {session ? (
               <>
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative hidden sm:flex">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-purple-500 rounded-full" />
-                </Button>
+                <div className="relative hidden sm:block" ref={notifRef}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => (notifOpen ? setNotifOpen(false) : openNotifs())}
+                  >
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+
+                  {notifOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[rgb(40,40,55)] bg-[rgb(14,14,22)] shadow-2xl z-50 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[rgb(35,35,50)]">
+                          <span className="text-sm font-bold text-white">Notifications</span>
+                          <Link href="/dashboard/notifications" onClick={() => setNotifOpen(false)} className="text-xs text-purple-400 hover:text-purple-300">View all</Link>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto divide-y divide-[rgb(28,28,40)]">
+                          {notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-sm text-[rgb(120,120,140)]">No notifications yet</div>
+                          ) : notifications.map((n) => (
+                            <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-[rgb(22,22,32)] transition-colors ${!n.read ? "bg-purple-900/10" : ""}`}>
+                              <div className="w-8 h-8 rounded-full bg-[rgb(28,28,40)] flex items-center justify-center shrink-0">
+                                <NotifIcon type={n.type} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-[rgb(210,210,225)] leading-snug">{n.message}</p>
+                                <p className="text-xs text-[rgb(100,100,120)] mt-0.5">
+                                  {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
+                              {!n.read && <div className="w-2 h-2 rounded-full bg-purple-500 shrink-0 mt-1.5" />}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 {/* Profile dropdown */}
                 <div className="relative">

@@ -552,8 +552,7 @@ function PresaleCard({ presale, communitySlug }: { presale: any; communitySlug: 
           {soldOut && <Badge variant="secondary" className="ml-3">Sold Out</Badge>}
         </div>
         <div className="text-2xl font-black text-green-400 mb-4">
-          {presale.priceSOL ? `${presale.priceSOL} SOL` : ""}
-          {presale.priceBTC ? `${presale.priceBTC} BTC` : ""}
+          {presale.priceSOL ? `${presale.priceSOL} SOL` : presale.priceBTC ? `${presale.priceBTC} BTC` : "TBA"}
         </div>
         <div className="flex justify-between text-base text-[rgb(130,130,150)] mb-2">
           <span>{presale.soldCount} / {presale.totalSupply} sold</span>

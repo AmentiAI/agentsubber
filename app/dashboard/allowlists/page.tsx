@@ -53,7 +53,7 @@ export default function AllowlistsPage() {
             ) : (
               <div className="space-y-4">
                 {campaigns.map((a) => {
-                  const pct = Math.round((a.filledSpots / a.totalSpots) * 100);
+                  const pct = a.totalSpots > 0 ? Math.round(((a.filledSpots ?? 0) / a.totalSpots) * 100) : 0;
                   return (
                     <Link
                       key={a.id}

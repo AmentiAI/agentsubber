@@ -42,7 +42,7 @@ export default function TrackerPage() {
   });
 
   const user = session?.user as any;
-  const plan = user?.plan ?? "FREE";
+  const plan = user?.plan ?? user?.subscription?.plan ?? "FREE";
   const hasAccess = plan === "ELITE";
 
   useEffect(() => {

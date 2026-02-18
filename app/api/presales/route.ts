@@ -6,20 +6,28 @@ import { postPresaleAnnouncement } from "@/lib/discord";
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const url = new URL(request.url);
     const communityId = url.searchParams.get("communityId");
+    const mine = url.searchParams.get("mine") === "true";
 
-    const where: any = { status: "ACTIVE" };
-    if (communityId) where.communityId = communityId;
+    let where: any = {};
+    if (communityId) {
+      where.communityId = communityId;
+    } else if (mine && session?.user?.id) {
+      // Return presales for communities owned by this user
+      where.community = { ownerUserId: session.user.id };
+    } else {
+      where.status = "ACTIVE";
+    }
 
     const presales = await prisma.presale.findMany({
       where,
       include: {
-        community: {
-          select: { id: true, name: true, slug: true, chain: true },
-        },
+        community: { select: { id: true, name: true, slug: true, chain: true } },
       },
       orderBy: { startsAt: "asc" },
+      take: 50,
     });
 
     return NextResponse.json({ presales });

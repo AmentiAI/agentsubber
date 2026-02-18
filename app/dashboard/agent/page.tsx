@@ -355,7 +355,7 @@ export default function AgentPage() {
                         ].map((item) => {
                           const Icon = item.icon;
                           return (
-                            <div key={item.step} className={`flex items-start gap-3 p-3 rounded-lg ${item.bg} border border-${item.color.replace("text-", "")}/20`}>
+                            <div key={item.step} className={`flex items-start gap-3 p-3 rounded-lg ${item.bg} border border-white/10`}>
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${item.bg} border border-current ${item.color}`}>
                                 <span className="text-xs font-bold">{item.step}</span>
                               </div>

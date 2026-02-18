@@ -41,30 +41,35 @@ export default function CollabsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const mineRes = await fetch("/api/communities/mine");
-      const mineData = await mineRes.json();
-      const mine = mineData.communities ?? [];
+      try {
+        const mineRes = await fetch("/api/communities/mine");
+        const mineData = await mineRes.json();
+        const mine = mineData.communities ?? [];
 
-      const withCollabs = await Promise.all(
-        mine.map(async (c: any) => {
-          const [inboxRes, outboxRes] = await Promise.all([
-            fetch(`/api/collab?communityId=${c.id}&type=inbox`),
-            fetch(`/api/collab?communityId=${c.id}&type=outbox`),
-          ]);
-          const [inboxData, outboxData] = await Promise.all([
-            inboxRes.json(),
-            outboxRes.json(),
-          ]);
-          return {
-            ...c,
-            inbox: inboxData.collabs ?? [],
-            outbox: outboxData.collabs ?? [],
-          };
-        })
-      );
+        const withCollabs = await Promise.all(
+          mine.map(async (c: any) => {
+            const [inboxRes, outboxRes] = await Promise.all([
+              fetch(`/api/collab?communityId=${c.id}&type=inbox`),
+              fetch(`/api/collab?communityId=${c.id}&type=outbox`),
+            ]);
+            const [inboxData, outboxData] = await Promise.all([
+              inboxRes.json(),
+              outboxRes.json(),
+            ]);
+            return {
+              ...c,
+              inbox: inboxData.collabs ?? [],
+              outbox: outboxData.collabs ?? [],
+            };
+          })
+        );
 
-      setCommunities(withCollabs);
-      setLoading(false);
+        setCommunities(withCollabs);
+      } catch {
+        // network error
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();

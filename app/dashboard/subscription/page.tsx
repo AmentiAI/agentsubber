@@ -289,7 +289,15 @@ function SubscriptionContent() {
         body: JSON.stringify({ plan }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (!res.ok) {
+        alert(data.error ?? "Something went wrong — try again.");
+      } else if (data.txHash) {
+        // Crypto payment — show confirmation
+        alert(`Payment received! TX: ${data.txHash}`);
+        window.location.reload();
+      }
     } finally {
       setLoading(null);
     }

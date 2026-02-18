@@ -75,7 +75,7 @@ export default function GiveawaysPage() {
                         <div className="flex items-center justify-between text-sm text-[rgb(130,130,150)]">
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
-                            {g._count.entries} entries
+                            {g._count?.entries ?? 0} entries
                           </span>
                           <span className="flex items-center gap-1">
                             <Trophy className="w-4 h-4 text-yellow-400" />
