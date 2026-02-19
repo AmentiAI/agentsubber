@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getLiveCryptoPrices } from "@/lib/prices";
 
 const PLAN_PRICES: Record<string, number> = { PRO: 9.99, ELITE: 24.99 };
+const CRYPTO_FEE = 3.00; // flat processing fee on crypto payments
 const BTC_TREASURY = "bc1qcvr75grjxtty40pzvj5p0fxsy0zgg9p2zatyr2";
 const SOL_TREASURY = "FFspB8K5Zpt99tNu1PTgNiRVW2TyjDo2rbcbkfDx7Nz5";
 
@@ -15,7 +16,8 @@ export async function POST(req: Request) {
   const { plan, chain } = await req.json();
   if (!PLAN_PRICES[plan]) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
 
-  const usd = PLAN_PRICES[plan];
+  const basePriceUsd = PLAN_PRICES[plan];
+  const usd = basePriceUsd + CRYPTO_FEE; // total charged (base + fee)
   const memo = `comm-${session.user.id.slice(-6)}-${Date.now()}`;
 
   // Always fetch live prices — never guess
@@ -67,5 +69,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ payment, amount, address, memo, lamports, amountSats, priceUsed });
+  return NextResponse.json({ payment, amount, address, memo, lamports, amountSats, priceUsed, basePriceUsd, feeUsd: CRYPTO_FEE, totalUsd: usd });
 }

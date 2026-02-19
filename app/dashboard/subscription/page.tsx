@@ -153,7 +153,7 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
   const { connection } = useConnection();
 
   const [chain, setChain] = useState<"BTC" | "SOL" | null>(null);
-  const [paymentInfo, setPaymentInfo] = useState<{ id: string; address: string; lamports?: number; sats?: number; displayAmount: string; priceUsed?: string } | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<{ id: string; address: string; lamports?: number; sats?: number; displayAmount: string; priceUsed?: string; basePriceUsd?: number; feeUsd?: number; totalUsd?: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "creating" | "sending" | "polling" | "confirmed" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [txSig, setTxSig] = useState("");
@@ -182,6 +182,9 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
         sats: data.amountSats,
         displayAmount: data.amount,
         priceUsed: data.priceUsed,
+        basePriceUsd: data.basePriceUsd,
+        feeUsd: data.feeUsd,
+        totalUsd: data.totalUsd,
       });
       setStatus("idle");
     } catch (e: any) {
@@ -373,11 +376,23 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
           {/* ── Payment ready — SOL ──────────── */}
           {status === "idle" && chain === "SOL" && paymentInfo && (
             <div className="space-y-5">
-              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
-                <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
-                <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} SOL</div>
-                <div className="text-xs text-[rgb(100,100,120)]">≈ ${planLabel.includes("Pro") ? "9.99" : "24.99"} USD · {paymentInfo.priceUsed}</div>
-                <div className="text-xs text-[rgb(80,80,100)] mt-1">to {paymentInfo.address.slice(0, 8)}…{paymentInfo.address.slice(-6)}</div>
+              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)]">
+                <div className="text-center mb-3">
+                  <div className="text-xs text-[rgb(130,130,150)] mb-1">You send</div>
+                  <div className="text-3xl font-black text-white">{paymentInfo.displayAmount} SOL</div>
+                </div>
+                <div className="border-t border-[rgb(30,30,45)] pt-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-[rgb(120,120,140)]">
+                    <span>Plan</span><span>${paymentInfo.basePriceUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[rgb(120,120,140)]">
+                    <span>Processing fee</span><span>${paymentInfo.feeUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-white border-t border-[rgb(30,30,45)] pt-1.5">
+                    <span>Total</span><span>${paymentInfo.totalUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="text-[rgb(80,80,100)] text-center pt-0.5">{paymentInfo.priceUsed} · to {paymentInfo.address.slice(0, 6)}…{paymentInfo.address.slice(-4)}</div>
+                </div>
               </div>
 
               {solWallet.connected ? (
@@ -401,11 +416,24 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
           {/* ── Payment ready — BTC ──────────── */}
           {status === "idle" && chain === "BTC" && paymentInfo && (
             <div className="space-y-5">
-              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
-                <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
-                <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} BTC</div>
-                <div className="text-xs text-[rgb(100,100,120)]">{paymentInfo.sats?.toLocaleString()} sats · ≈ ${planLabel.includes("Pro") ? "9.99" : "24.99"} USD · {paymentInfo.priceUsed}</div>
-                <div className="text-xs text-[rgb(80,80,100)] mt-1">to {paymentInfo.address.slice(0, 10)}…{paymentInfo.address.slice(-6)}</div>
+              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)]">
+                <div className="text-center mb-3">
+                  <div className="text-xs text-[rgb(130,130,150)] mb-1">You send</div>
+                  <div className="text-3xl font-black text-white">{paymentInfo.displayAmount} BTC</div>
+                  <div className="text-xs text-[rgb(100,100,120)] mt-0.5">{paymentInfo.sats?.toLocaleString()} sats</div>
+                </div>
+                <div className="border-t border-[rgb(30,30,45)] pt-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-[rgb(120,120,140)]">
+                    <span>Plan</span><span>${paymentInfo.basePriceUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[rgb(120,120,140)]">
+                    <span>Processing fee</span><span>${paymentInfo.feeUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-white border-t border-[rgb(30,30,45)] pt-1.5">
+                    <span>Total</span><span>${paymentInfo.totalUsd?.toFixed(2)}</span>
+                  </div>
+                  <div className="text-[rgb(80,80,100)] text-center pt-0.5">{paymentInfo.priceUsed} · to {paymentInfo.address.slice(0, 6)}…{paymentInfo.address.slice(-4)}</div>
+                </div>
               </div>
 
               <Button variant="gradient" className="w-full h-12 text-base gap-2" onClick={payBtc}>
