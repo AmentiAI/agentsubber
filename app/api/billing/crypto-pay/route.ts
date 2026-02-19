@@ -7,7 +7,7 @@ const PRICES: Record<string, number> = { PRO: 9.99, ELITE: 24.99 };
 const BTC_PRICE_USD = 97000;
 const SOL_PRICE_USD = 180;
 const BTC_TREASURY = "bc1qcvr75grjxtty40pzvj5p0fxsy0zgg9p2zatyr2";
-const SOL_TREASURY = "FFspB8K5Zpt99tNu1PTgNiRVW2TyjDo2rbcabkfDx7Nz5";
+const SOL_TREASURY = "FFspB8K5Zpt99tNu1PTgNiRVW2TyjDo2rbcbkfDx7Nz5";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
