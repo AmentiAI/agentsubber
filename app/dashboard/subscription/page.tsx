@@ -28,23 +28,23 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Free public RPCs tried in order — no API key needed
-const SOL_RPCS = [
-  "https://solana.publicnode.com",
-  "https://1rpc.io/sol",
-  "https://api.mainnet-beta.solana.com",
-  "https://rpc.ankr.com/solana",
-];
+// Proxy all RPC calls through our API server — avoids browser CORS/IP blocks
+const SOL_RPC_PROXY = "/api/solana/rpc";
 
-async function getSolConnection(): Promise<{ conn: Connection; blockhash: string; lastValidBlockHeight: number }> {
-  for (const url of SOL_RPCS) {
-    try {
-      const conn = new Connection(url, "confirmed");
-      const res = await conn.getLatestBlockhash("confirmed");
-      return { conn, ...res };
-    } catch {}
-  }
-  throw new Error("All Solana RPC endpoints unavailable — please try again in a moment.");
+async function proxyRpc(method: string, params: any[]): Promise<any> {
+  const res = await fetch(SOL_RPC_PROXY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+  });
+  const data = await res.json();
+  if (data?.error) throw new Error(data.error.message ?? JSON.stringify(data.error));
+  return data.result;
+}
+
+async function getSolBlockhash(): Promise<{ blockhash: string; lastValidBlockHeight: number }> {
+  const result = await proxyRpc("getLatestBlockhash", [{ commitment: "confirmed" }]);
+  return { blockhash: result.value.blockhash, lastValidBlockHeight: result.value.lastValidBlockHeight };
 }
 
 const PLANS = [
@@ -202,27 +202,22 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
         lamports,
       });
 
-      // Primary path: use Phantom's own internal RPC via signAndSendTransaction
-      // (avoids any external RPC call entirely)
-      const phantom = (window as any).phantom?.solana ?? (window as any).solana;
-      if (phantom?.signAndSendTransaction) {
-        const tx = new Transaction().add(transfer);
-        tx.feePayer = solWallet.publicKey;
-        // Phantom fills in blockhash internally
-        const { signature } = await phantom.signAndSendTransaction(tx);
-        setTxSig(signature);
-        startPolling(paymentInfo.id, signature);
-        return;
-      }
-
-      // Fallback: try multiple free public RPCs until one works
-      const { conn, blockhash, lastValidBlockHeight } = await getSolConnection();
+      // Get blockhash via our server proxy (avoids browser IP blocks on public RPCs)
+      const { blockhash, lastValidBlockHeight } = await getSolBlockhash();
       const tx = new Transaction().add(transfer);
       tx.recentBlockhash = blockhash;
       tx.lastValidBlockHeight = lastValidBlockHeight;
       tx.feePayer = solWallet.publicKey;
 
-      const sig = await solWallet.sendTransaction(tx, conn);
+      // Sign locally with Phantom/Solflare
+      const signed = await solWallet.signTransaction!(tx);
+      const rawTx = signed.serialize();
+      const b64 = Buffer.from(rawTx).toString("base64");
+
+      // Broadcast via our proxy
+      const sigResult = await proxyRpc("sendTransaction", [b64, { encoding: "base64", skipPreflight: false, preflightCommitment: "confirmed" }]);
+      const sig: string = typeof sigResult === "string" ? sigResult : sigResult?.signature ?? sigResult;
+
       setTxSig(sig);
       startPolling(paymentInfo.id, sig);
     } catch (e: any) {
