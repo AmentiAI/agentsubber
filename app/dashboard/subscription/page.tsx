@@ -28,8 +28,24 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Reliable free RPC fallback (mainnet-beta.solana.com 403s due to rate limits)
-const RELIABLE_RPC = "https://rpc.ankr.com/solana";
+// Free public RPCs tried in order — no API key needed
+const SOL_RPCS = [
+  "https://solana.publicnode.com",
+  "https://1rpc.io/sol",
+  "https://api.mainnet-beta.solana.com",
+  "https://rpc.ankr.com/solana",
+];
+
+async function getSolConnection(): Promise<{ conn: Connection; blockhash: string; lastValidBlockHeight: number }> {
+  for (const url of SOL_RPCS) {
+    try {
+      const conn = new Connection(url, "confirmed");
+      const res = await conn.getLatestBlockhash("confirmed");
+      return { conn, ...res };
+    } catch {}
+  }
+  throw new Error("All Solana RPC endpoints unavailable — please try again in a moment.");
+}
 
 const PLANS = [
   {
@@ -180,19 +196,30 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
     setErrorMsg("");
     try {
       const lamports = paymentInfo.lamports ?? Math.round(parseFloat(paymentInfo.displayAmount) * LAMPORTS_PER_SOL);
+      const transfer = SystemProgram.transfer({
+        fromPubkey: solWallet.publicKey,
+        toPubkey: new PublicKey(paymentInfo.address),
+        lamports,
+      });
 
-      // Use reliable RPC — mainnet-beta.solana.com 403s under load
-      const conn = new Connection(RELIABLE_RPC, "confirmed");
+      // Primary path: use Phantom's own internal RPC via signAndSendTransaction
+      // (avoids any external RPC call entirely)
+      const phantom = (window as any).phantom?.solana ?? (window as any).solana;
+      if (phantom?.signAndSendTransaction) {
+        const tx = new Transaction().add(transfer);
+        tx.feePayer = solWallet.publicKey;
+        // Phantom fills in blockhash internally
+        const { signature } = await phantom.signAndSendTransaction(tx);
+        setTxSig(signature);
+        startPolling(paymentInfo.id, signature);
+        return;
+      }
 
-      const tx = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: solWallet.publicKey,
-          toPubkey: new PublicKey(paymentInfo.address),
-          lamports,
-        })
-      );
-      const { blockhash } = await conn.getLatestBlockhash("confirmed");
+      // Fallback: try multiple free public RPCs until one works
+      const { conn, blockhash, lastValidBlockHeight } = await getSolConnection();
+      const tx = new Transaction().add(transfer);
       tx.recentBlockhash = blockhash;
+      tx.lastValidBlockHeight = lastValidBlockHeight;
       tx.feePayer = solWallet.publicKey;
 
       const sig = await solWallet.sendTransaction(tx, conn);

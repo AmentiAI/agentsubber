@@ -6,9 +6,8 @@ import { useMemo } from "react";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 export function SolanaProvider({ children }: { children: React.ReactNode }) {
-  // api.mainnet-beta.solana.com heavily rate-limits and now returns 403 on many calls.
-  // Use ankr's free public endpoint as the reliable default.
-  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC ?? "https://rpc.ankr.com/solana";
+  // publicnode.com is a reliable free public Solana RPC (no API key required)
+  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC ?? "https://solana.publicnode.com";
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter(),
