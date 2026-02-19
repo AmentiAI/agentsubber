@@ -1,6 +1,11 @@
 /**
- * Live crypto price fetcher.
- * Tries multiple free APIs in order — never falls back to a hardcoded guess.
+ * Live BTC + SOL price fetcher.
+ * Sources tested from our server:
+ *   1. Kraken  — exchange API, no key, no geo-block, highly accurate
+ *   2. Coinbase — spot price API, no key, reliable
+ *   3. CoinGecko — aggregator, no key needed for basic calls
+ *
+ * Never returns a hardcoded guess. Throws if all sources fail.
  */
 
 export interface CryptoPrices {
@@ -8,63 +13,76 @@ export interface CryptoPrices {
   sol: number;
 }
 
-async function fromCoinGecko(): Promise<CryptoPrices> {
+async function fromKraken(): Promise<CryptoPrices> {
   const res = await fetch(
-    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,solana&vs_currencies=usd",
-    { signal: AbortSignal.timeout(5000) }
+    "https://api.kraken.com/0/public/Ticker?pair=XBTUSD,SOLUSD",
+    { signal: AbortSignal.timeout(6000) }
   );
-  if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+  if (!res.ok) throw new Error(`Kraken HTTP ${res.status}`);
   const d = await res.json();
-  if (!d?.bitcoin?.usd || !d?.solana?.usd) throw new Error("CoinGecko bad response");
-  return { btc: d.bitcoin.usd, sol: d.solana.usd };
-}
-
-async function fromBinance(): Promise<CryptoPrices> {
-  const [btcRes, solRes] = await Promise.all([
-    fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", { signal: AbortSignal.timeout(5000) }),
-    fetch("https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT", { signal: AbortSignal.timeout(5000) }),
-  ]);
-  if (!btcRes.ok || !solRes.ok) throw new Error("Binance error");
-  const [btcD, solD] = await Promise.all([btcRes.json(), solRes.json()]);
-  const btc = parseFloat(btcD.price);
-  const sol = parseFloat(solD.price);
-  if (!btc || !sol) throw new Error("Binance bad response");
+  if (d.error?.length) throw new Error(`Kraken: ${d.error[0]}`);
+  const result = d.result;
+  // Kraken uses XXBTZUSD for BTC
+  const btcData = result["XXBTZUSD"] ?? result["XBTUSD"];
+  const solData = result["SOLUSD"];
+  if (!btcData || !solData) throw new Error("Kraken: missing pair data");
+  const btc = parseFloat(btcData.c[0]); // c = last trade closed [price, lot volume]
+  const sol = parseFloat(solData.c[0]);
+  if (!btc || !sol) throw new Error("Kraken: bad price values");
   return { btc, sol };
 }
 
 async function fromCoinbase(): Promise<CryptoPrices> {
   const [btcRes, solRes] = await Promise.all([
-    fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { signal: AbortSignal.timeout(5000) }),
-    fetch("https://api.coinbase.com/v2/prices/SOL-USD/spot", { signal: AbortSignal.timeout(5000) }),
+    fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { signal: AbortSignal.timeout(6000) }),
+    fetch("https://api.coinbase.com/v2/prices/SOL-USD/spot", { signal: AbortSignal.timeout(6000) }),
   ]);
-  if (!btcRes.ok || !solRes.ok) throw new Error("Coinbase error");
+  if (!btcRes.ok || !solRes.ok) throw new Error(`Coinbase HTTP ${btcRes.status}/${solRes.status}`);
   const [btcD, solD] = await Promise.all([btcRes.json(), solRes.json()]);
   const btc = parseFloat(btcD?.data?.amount);
   const sol = parseFloat(solD?.data?.amount);
-  if (!btc || !sol) throw new Error("Coinbase bad response");
+  if (!btc || !sol) throw new Error("Coinbase: bad price values");
   return { btc, sol };
 }
 
-/**
- * Fetch live BTC + SOL prices in USD.
- * Tries CoinGecko → Binance → Coinbase in order.
- * Throws if ALL sources fail — never returns a made-up number.
- */
-export async function getLiveCryptoPrices(): Promise<CryptoPrices> {
-  const sources = [fromCoinGecko, fromBinance, fromCoinbase];
-  const errors: string[] = [];
+async function fromCoinGecko(): Promise<CryptoPrices> {
+  const res = await fetch(
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,solana&vs_currencies=usd",
+    { signal: AbortSignal.timeout(6000) }
+  );
+  if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+  const d = await res.json();
+  const btc = d?.bitcoin?.usd;
+  const sol = d?.solana?.usd;
+  if (!btc || !sol) throw new Error("CoinGecko: bad price values");
+  return { btc, sol };
+}
 
-  for (const fn of sources) {
+function validate(prices: CryptoPrices, source: string): CryptoPrices {
+  // Sanity bounds — reject obviously wrong values
+  if (prices.btc < 5000 || prices.btc > 10_000_000)
+    throw new Error(`${source}: BTC price $${prices.btc} is out of range`);
+  if (prices.sol < 0.50 || prices.sol > 100_000)
+    throw new Error(`${source}: SOL price $${prices.sol} is out of range`);
+  return prices;
+}
+
+export async function getLiveCryptoPrices(): Promise<CryptoPrices> {
+  const sources: Array<[string, () => Promise<CryptoPrices>]> = [
+    ["Kraken", fromKraken],
+    ["Coinbase", fromCoinbase],
+    ["CoinGecko", fromCoinGecko],
+  ];
+
+  const errors: string[] = [];
+  for (const [name, fn] of sources) {
     try {
       const prices = await fn();
-      // Sanity check — reject obviously wrong prices
-      if (prices.btc < 1000 || prices.btc > 10_000_000) throw new Error(`BTC price ${prices.btc} out of range`);
-      if (prices.sol < 0.01 || prices.sol > 100_000) throw new Error(`SOL price ${prices.sol} out of range`);
-      return prices;
+      return validate(prices, name);
     } catch (e: any) {
-      errors.push(e.message);
+      errors.push(`${name}: ${e.message}`);
     }
   }
 
-  throw new Error(`All price sources failed: ${errors.join(" | ")}`);
+  throw new Error(`All price APIs failed — ${errors.join(" | ")}`);
 }
