@@ -457,10 +457,19 @@ function SubscriptionContent() {
   const [loading, setLoading] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cryptoPayPlan, setCryptoPayPlan] = useState<string | null>(null);
+  const [subInfo, setSubInfo] = useState<{ plan: string; currentPeriodEnd?: string | null; status?: string } | null>(null);
   const successParam = searchParams.get("success");
 
   const user = session?.user as any;
-  const currentPlan = user?.plan ?? "FREE";
+  const currentPlan = subInfo?.plan ?? user?.plan ?? "FREE";
+  const periodEnd = subInfo?.currentPeriodEnd ? new Date(subInfo.currentPeriodEnd) : null;
+
+  useEffect(() => {
+    fetch("/api/subscribe").then(r => r.ok ? r.json() : null).then(d => { if (d) setSubInfo(d); });
+  }, []);
+
+  // Days until expiry
+  const daysLeft = periodEnd ? Math.max(0, Math.ceil((periodEnd.getTime() - Date.now()) / 86400000)) : null;
 
   async function subscribe(plan: "PRO" | "ELITE") {
     setLoading(plan);
@@ -535,11 +544,26 @@ function SubscriptionContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-3xl font-black text-white mb-1">{currentPlan}</div>
-                    <div className="text-sm text-[rgb(130,130,150)]">
-                      {currentPlan === "FREE"
-                        ? "Upgrade to unlock more features"
-                        : "Thank you for supporting Communiclaw!"}
-                    </div>
+                    {currentPlan !== "FREE" && periodEnd ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-[rgb(130,130,150)]">
+                          Renews <span className="text-white font-medium">{periodEnd.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                        </div>
+                        <div className={`text-sm font-medium ${
+                          daysLeft !== null && daysLeft <= 3 ? "text-red-400" :
+                          daysLeft !== null && daysLeft <= 7 ? "text-yellow-400" :
+                          "text-green-400"
+                        }`}>
+                          {daysLeft === 0 ? "⚠️ Expires today!" :
+                           daysLeft === 1 ? "⚠️ 1 day remaining" :
+                           daysLeft !== null ? `${daysLeft} days remaining` : ""}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-[rgb(130,130,150)]">
+                        {currentPlan === "FREE" ? "Upgrade to unlock more features" : "Thank you for supporting Communiclaw!"}
+                      </div>
+                    )}
                   </div>
                   {currentPlan !== "FREE" && (
                     <Button

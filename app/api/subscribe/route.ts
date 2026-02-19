@@ -4,6 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+// GET — return current subscription info (plan + expiry)
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const sub = await prisma.subscription.findUnique({ where: { userId: session.user.id } });
+  return NextResponse.json({
+    plan: sub?.plan ?? "FREE",
+    status: sub?.status ?? "inactive",
+    currentPeriodEnd: sub?.currentPeriodEnd ?? null,
+    cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
