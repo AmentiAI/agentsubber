@@ -17,11 +17,16 @@ import {
   AlertTriangle,
   Bitcoin,
   X,
-  Copy,
+  ExternalLink,
   Clock,
+  Send,
+  Wallet,
 } from "lucide-react";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import Navbar from "@/components/layout/Navbar";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
   {
@@ -75,193 +80,310 @@ const PLANS = [
   },
 ];
 
-interface CryptoPayState {
-  plan: string;
-  chain: "BTC" | "SOL" | null;
-  paymentId: string | null;
-  amount: string | null;
-  address: string | null;
-  memo: string | null;
-  loadingChain: "BTC" | "SOL" | null;
-  verifying: boolean;
-  verifyResult: { confirmed: boolean; pending?: boolean; message?: string; error?: string; txHash?: string } | null;
+// ─── BTC wallet helpers ──────────────────────────────────────────────────────
+declare const window: any;
+
+async function detectBtcWallet(): Promise<string | null> {
+  if (window?.unisat) return "unisat";
+  if (window?.XverseProviders?.BitcoinProvider) return "xverse";
+  if (window?.LeatherProvider) return "leather";
+  if (window?.magicEden?.bitcoin) return "magiceden";
+  return null;
 }
 
-function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }) {
-  const [state, setState] = useState<CryptoPayState>({
-    plan,
-    chain: null,
-    paymentId: null,
-    amount: null,
-    address: null,
-    memo: null,
-    loadingChain: null,
-    verifying: false,
-    verifyResult: null,
-  });
-  const [copied, setCopied] = useState(false);
-  const [txHash, setTxHash] = useState("");
+async function btcSendPayment(toAddress: string, amountSats: number): Promise<string> {
+  const provider = await detectBtcWallet();
+  if (!provider) throw new Error("No Bitcoin wallet detected. Install Xverse or Unisat.");
 
-  async function selectChain(chain: "BTC" | "SOL") {
-    setState(s => ({ ...s, loadingChain: chain, verifyResult: null }));
+  if (provider === "unisat") {
+    const txid = await window.unisat.sendBitcoin(toAddress, amountSats);
+    if (!txid) throw new Error("Unisat returned no txid");
+    return txid;
+  }
+  if (provider === "xverse") {
+    return new Promise((resolve, reject) => {
+      window.XverseProviders.BitcoinProvider.request("sendTransfer", {
+        recipients: [{ address: toAddress, amount: amountSats }],
+      }).then((resp: any) => {
+        const txid = resp?.result?.txid ?? resp?.txid;
+        if (!txid) reject(new Error("Xverse returned no txid"));
+        else resolve(txid);
+      }).catch(reject);
+    });
+  }
+  if (provider === "leather") {
+    const resp = await window.LeatherProvider.request("sendTransfer", {
+      network: "mainnet",
+      recipients: [{ address: toAddress, amount: String(amountSats) }],
+    });
+    const txid = resp?.result?.txid;
+    if (!txid) throw new Error("Leather returned no txid");
+    return txid;
+  }
+  if (provider === "magiceden") {
+    const resp = await window.magicEden.bitcoin.sendBitcoin({ toAddress, satoshis: amountSats });
+    return resp.txid ?? resp.txID ?? resp;
+  }
+  throw new Error("Unsupported wallet");
+}
+
+// ─── Main payment panel ───────────────────────────────────────────────────────
+
+function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }) {
+  const solWallet = useWallet();
+  const { connection } = useConnection();
+
+  const [chain, setChain] = useState<"BTC" | "SOL" | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<{ id: string; address: string; lamports?: number; sats?: number; displayAmount: string } | null>(null);
+  const [status, setStatus] = useState<"idle" | "creating" | "sending" | "polling" | "confirmed" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [txSig, setTxSig] = useState("");
+  const [pollCount, setPollCount] = useState(0);
+
+  const planLabel = plan === "PRO" ? "Pro — $9.99/mo" : "Elite — $24.99/mo";
+
+  // ── Step 1: user selects chain → fetch payment details from backend
+  async function selectChain(c: "BTC" | "SOL") {
+    setChain(c);
+    setStatus("creating");
+    setErrorMsg("");
     try {
       const res = await fetch("/api/billing/crypto-pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, chain }),
+        body: JSON.stringify({ plan, chain: c }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setState(s => ({
-          ...s,
-          chain,
-          paymentId: data.payment.id,
-          amount: data.amount,
-          address: data.address,
-          memo: data.memo,
-          loadingChain: null,
-        }));
-      } else {
-        setState(s => ({ ...s, loadingChain: null }));
-        alert(data.error ?? "Failed to create payment");
-      }
-    } catch {
-      setState(s => ({ ...s, loadingChain: null }));
+      if (!res.ok) throw new Error(data.error ?? "Failed to create payment");
+      // data: { payment: {id}, amount (e.g. "0.0555"), address, amountSats?, lamports? }
+      setPaymentInfo({
+        id: data.payment.id,
+        address: data.address,
+        lamports: data.lamports,
+        sats: data.amountSats,
+        displayAmount: data.amount,
+      });
+      setStatus("idle");
+    } catch (e: any) {
+      setErrorMsg(e.message);
+      setStatus("error");
     }
   }
 
-  async function verifyPayment() {
-    if (!state.paymentId || !txHash.trim()) return;
-    setState(s => ({ ...s, verifying: true, verifyResult: null }));
+  // ── Step 2a: SOL — use wallet adapter to send
+  async function paySol() {
+    if (!paymentInfo || !solWallet.publicKey || !solWallet.sendTransaction) return;
+    setStatus("sending");
+    setErrorMsg("");
     try {
-      const res = await fetch("/api/billing/verify-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: state.paymentId, txHash: txHash.trim() }),
-      });
-      const data = await res.json();
-      setState(s => ({ ...s, verifying: false, verifyResult: data }));
-    } catch {
-      setState(s => ({ ...s, verifying: false, verifyResult: { confirmed: false, error: "Network error. Please try again." } }));
+      const lamports = paymentInfo.lamports ?? Math.round(parseFloat(paymentInfo.displayAmount) * LAMPORTS_PER_SOL);
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: solWallet.publicKey,
+          toPubkey: new PublicKey(paymentInfo.address),
+          lamports,
+        })
+      );
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = solWallet.publicKey;
+
+      const sig = await solWallet.sendTransaction(tx, connection);
+      setTxSig(sig);
+      startPolling(paymentInfo.id, sig);
+    } catch (e: any) {
+      setErrorMsg(e.message ?? "Transaction rejected");
+      setStatus("error");
     }
   }
 
-  function copyAddr() {
-    if (state.address) {
-      navigator.clipboard.writeText(state.address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // ── Step 2b: BTC — use wallet extension to send
+  async function payBtc() {
+    if (!paymentInfo) return;
+    setStatus("sending");
+    setErrorMsg("");
+    try {
+      const sats = paymentInfo.sats ?? Math.round(parseFloat(paymentInfo.displayAmount) * 1e8);
+      const txid = await btcSendPayment(paymentInfo.address, sats);
+      setTxSig(txid);
+      startPolling(paymentInfo.id, txid);
+    } catch (e: any) {
+      setErrorMsg(e.message ?? "Transaction rejected");
+      setStatus("error");
     }
   }
+
+  // ── Step 3: poll backend for confirmation
+  function startPolling(paymentId: string, txHash: string) {
+    setStatus("polling");
+    let attempts = 0;
+    const MAX = 40; // ~5 min for BTC, ~2 min for SOL
+    const interval = chain === "BTC" ? 8000 : 3000;
+
+    const poll = async () => {
+      attempts++;
+      setPollCount(attempts);
+      try {
+        const res = await fetch("/api/billing/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, txHash }),
+        });
+        const data = await res.json();
+        if (data.confirmed) {
+          setStatus("confirmed");
+          return;
+        }
+      } catch {}
+      if (attempts < MAX) setTimeout(poll, interval);
+      else {
+        setStatus("error");
+        setErrorMsg("Timed out waiting for confirmation. Your plan will upgrade once the transaction confirms — check back in a few minutes.");
+      }
+    };
+    setTimeout(poll, interval);
+  }
+
+  const explorerUrl = txSig
+    ? chain === "BTC"
+      ? `https://mempool.space/tx/${txSig}`
+      : `https://solscan.io/tx/${txSig}`
+    : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-[rgb(16,16,22)] border border-[rgb(40,40,55)] rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgb(40,40,55)]">
-          <div className="text-base font-bold text-white">Pay with Crypto — {plan}</div>
-          <button onClick={onClose} className="text-[rgb(130,130,150)] hover:text-white">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className="w-full sm:max-w-md bg-[rgb(14,14,20)] border-t sm:border border-[rgb(40,40,55)] sm:rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgb(30,30,45)]">
+          <div className="font-bold text-white">{planLabel}</div>
+          <button onClick={onClose} className="text-[rgb(130,130,150)] hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
+
         <div className="p-6 space-y-5">
-          {/* Chain selector */}
-          {!state.chain && (
+          {/* ── Confirmed ─────────────────────── */}
+          {status === "confirmed" && (
+            <div className="text-center space-y-4 py-4">
+              <div className="text-5xl">🎉</div>
+              <div>
+                <div className="text-xl font-black text-white mb-1">Payment Confirmed!</div>
+                <div className="text-sm text-green-400">{plan} plan is now active on your account.</div>
+              </div>
+              {explorerUrl && (
+                <a href={explorerUrl} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 underline underline-offset-2">
+                  View on {chain === "BTC" ? "Mempool" : "Solscan"}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+              <Button variant="gradient" className="w-full mt-2" onClick={() => { onClose(); window.location.reload(); }}>
+                Done
+              </Button>
+            </div>
+          )}
+
+          {/* ── Polling (waiting for confirms) ── */}
+          {status === "polling" && (
+            <div className="text-center space-y-4 py-4">
+              <Loader2 className="w-10 h-10 animate-spin text-purple-400 mx-auto" />
+              <div>
+                <div className="text-base font-bold text-white mb-1">Transaction Broadcast!</div>
+                <div className="text-sm text-[rgb(140,140,160)]">Waiting for {chain === "BTC" ? "1 Bitcoin confirmation" : "Solana finality"}…</div>
+                <div className="text-xs text-[rgb(100,100,120)] mt-1">Check #{pollCount}</div>
+              </div>
+              {explorerUrl && (
+                <a href={explorerUrl} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  View on {chain === "BTC" ? "Mempool" : "Solscan"}
+                </a>
+              )}
+              <div className="text-xs text-[rgb(100,100,120)]">You can close this — your plan will upgrade automatically once confirmed.</div>
+            </div>
+          )}
+
+          {/* ── Sending ─────────────────────── */}
+          {status === "sending" && (
+            <div className="text-center py-8 space-y-3">
+              <Loader2 className="w-10 h-10 animate-spin text-purple-400 mx-auto" />
+              <div className="text-sm text-white font-medium">Approve in your wallet…</div>
+              <div className="text-xs text-[rgb(120,120,140)]">Check your wallet extension for the payment prompt</div>
+            </div>
+          )}
+
+          {/* ── Error ───────────────────────── */}
+          {status === "error" && (
+            <div className="p-4 rounded-xl bg-red-900/20 border border-red-500/30 text-sm text-red-300">
+              <AlertTriangle className="w-4 h-4 mb-2 text-red-400" />
+              {errorMsg}
+            </div>
+          )}
+
+          {/* ── Chain selector ──────────────── */}
+          {(status === "idle" || status === "creating" || status === "error") && !chain && (
             <div>
-              <div className="text-sm text-[rgb(130,130,150)] mb-3">Select payment chain:</div>
+              <div className="text-sm font-medium text-[rgb(180,180,200)] mb-3">Pay with:</div>
               <div className="grid grid-cols-2 gap-3">
                 {(["BTC", "SOL"] as const).map(c => (
-                  <button
-                    key={c}
-                    onClick={() => selectChain(c)}
-                    disabled={state.loadingChain !== null}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:border-purple-500/50 ${
-                      c === "BTC" ? "border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10 text-orange-400" : "border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 text-purple-400"
-                    }`}
-                  >
-                    {state.loadingChain === c ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <span className="text-2xl">{c === "BTC" ? "₿" : "◎"}</span>
-                    )}
-                    <span className="text-sm font-bold">{c === "BTC" ? "Bitcoin" : "Solana"}</span>
+                  <button key={c} onClick={() => selectChain(c)} disabled={status === "creating"}
+                    className={`flex flex-col items-center gap-2.5 p-5 rounded-xl border-2 transition-all font-bold text-sm
+                      ${c === "BTC"
+                        ? "border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10 text-orange-400 hover:border-orange-400"
+                        : "border-purple-500/40 bg-purple-500/5 hover:bg-purple-500/10 text-purple-400 hover:border-purple-400"
+                      }`}>
+                    {status === "creating" ? <Loader2 className="w-7 h-7 animate-spin" /> : <span className="text-3xl">{c === "BTC" ? "₿" : "◎"}</span>}
+                    <span>{c === "BTC" ? "Bitcoin" : "Solana"}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Payment details */}
-          {state.chain && state.amount && state.address && (
-            <>
-              <div className="bg-[rgb(20,20,28)] rounded-xl p-5 border border-[rgb(40,40,55)]">
-                <div className="text-xs text-[rgb(130,130,150)] mb-1">Send exactly</div>
-                <div className="text-2xl font-black text-white mb-4">{state.amount} {state.chain}</div>
-                <div className="text-xs text-[rgb(130,130,150)] mb-1">To address</div>
-                <div className="font-mono text-sm text-white bg-[rgb(30,30,40)] p-3 rounded-lg break-all mb-3">{state.address}</div>
-                <Button onClick={copyAddr} variant="secondary" size="sm" className="w-full">
-                  {copied ? <><CheckCircle className="w-3.5 h-3.5 mr-1 text-green-400" /> Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1" /> Copy Address</>}
-                </Button>
-                <div className="text-xs text-[rgb(130,130,150)] mt-3 text-center">
-                  ⚡ Send the exact amount shown — each payment has a unique amount for tracking
-                </div>
+          {/* ── Payment ready — SOL ──────────── */}
+          {status === "idle" && chain === "SOL" && paymentInfo && (
+            <div className="space-y-5">
+              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
+                <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
+                <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} SOL</div>
+                <div className="text-xs text-[rgb(100,100,120)]">to {paymentInfo.address.slice(0, 8)}…{paymentInfo.address.slice(-6)}</div>
               </div>
 
-              {/* TX Hash input */}
-              {!state.verifyResult?.confirmed && (
-                <div>
-                  <label className="block text-xs font-medium text-[rgb(200,200,210)] mb-1.5">
-                    After sending, paste your transaction hash here:
-                  </label>
-                  <Input
-                    placeholder="Paste your transaction hash/ID here..."
-                    value={txHash}
-                    onChange={(e) => setTxHash(e.target.value)}
-                    className="font-mono text-sm"
-                  />
-                </div>
-              )}
-
-              {/* Verify result */}
-              {state.verifyResult && (
-                <div className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
-                  state.verifyResult.confirmed
-                    ? "bg-green-500/10 border border-green-500/20 text-green-300"
-                    : state.verifyResult.pending
-                    ? "bg-yellow-500/10 border border-yellow-500/20 text-yellow-300"
-                    : "bg-red-500/10 border border-red-500/20 text-red-300"
-                }`}>
-                  {state.verifyResult.confirmed ? (
-                    <><CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>Payment confirmed! Your {plan} plan is now active. TX: {state.verifyResult.txHash?.slice(0, 16)}...</span></>
-                  ) : state.verifyResult.pending ? (
-                    <><Clock className="w-4 h-4 shrink-0 mt-0.5" /><span>{state.verifyResult.message ?? "Transaction found, waiting for confirmation. Check back in 1-2 minutes."}</span></>
-                  ) : (
-                    <><AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /><span>{state.verifyResult.error ?? "Could not verify transaction."}</span></>
-                  )}
-                </div>
-              )}
-
-              {!state.verifyResult?.confirmed && (
-                <Button
-                  variant="gradient"
-                  className="w-full"
-                  onClick={verifyPayment}
-                  disabled={state.verifying || !txHash.trim()}
-                >
-                  {state.verifying ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying on-chain...</>
-                  ) : (
-                    "Verify Payment"
-                  )}
+              {solWallet.connected ? (
+                <Button variant="gradient" className="w-full h-12 text-base gap-2" onClick={paySol}>
+                  <Send className="w-5 h-5" />
+                  Pay {paymentInfo.displayAmount} SOL
                 </Button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-xs text-center text-[rgb(130,130,150)]">Connect your Solana wallet to pay</div>
+                  <div className="flex justify-center">
+                    <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-500 !rounded-xl !h-12 !text-base !font-bold" />
+                  </div>
+                </div>
               )}
+              <button onClick={() => { setChain(null); setPaymentInfo(null); setStatus("idle"); setErrorMsg(""); }}
+                className="w-full text-xs text-[rgb(110,110,130)] hover:text-white transition-colors">← Change chain</button>
+            </div>
+          )}
 
-              <button
-                onClick={() => { setState(s => ({ ...s, chain: null, paymentId: null, amount: null, address: null, memo: null, verifyResult: null })); setTxHash(""); }}
-                className="w-full text-xs text-[rgb(130,130,150)] hover:text-white text-center"
-              >
-                ← Change chain
-              </button>
-            </>
+          {/* ── Payment ready — BTC ──────────── */}
+          {status === "idle" && chain === "BTC" && paymentInfo && (
+            <div className="space-y-5">
+              <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
+                <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
+                <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} BTC</div>
+                <div className="text-xs text-[rgb(100,100,120)]">{paymentInfo.sats?.toLocaleString()} sats · to {paymentInfo.address.slice(0, 10)}…{paymentInfo.address.slice(-6)}</div>
+              </div>
+
+              <Button variant="gradient" className="w-full h-12 text-base gap-2" onClick={payBtc}>
+                <Send className="w-5 h-5" />
+                Pay with Bitcoin Wallet
+              </Button>
+              <div className="text-xs text-center text-[rgb(100,100,120)]">Works with Xverse, Unisat, Leather, Magic Eden</div>
+              <button onClick={() => { setChain(null); setPaymentInfo(null); setStatus("idle"); setErrorMsg(""); }}
+                className="w-full text-xs text-[rgb(110,110,130)] hover:text-white transition-colors">← Change chain</button>
+            </div>
           )}
         </div>
       </div>
