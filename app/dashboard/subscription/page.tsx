@@ -26,7 +26,10 @@ import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import Navbar from "@/components/layout/Navbar";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+
+// Reliable free RPC fallback (mainnet-beta.solana.com 403s due to rate limits)
+const RELIABLE_RPC = "https://rpc.ankr.com/solana";
 
 const PLANS = [
   {
@@ -177,6 +180,10 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
     setErrorMsg("");
     try {
       const lamports = paymentInfo.lamports ?? Math.round(parseFloat(paymentInfo.displayAmount) * LAMPORTS_PER_SOL);
+
+      // Use reliable RPC — mainnet-beta.solana.com 403s under load
+      const conn = new Connection(RELIABLE_RPC, "confirmed");
+
       const tx = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: solWallet.publicKey,
@@ -184,11 +191,11 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
           lamports,
         })
       );
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await conn.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
       tx.feePayer = solWallet.publicKey;
 
-      const sig = await solWallet.sendTransaction(tx, connection);
+      const sig = await solWallet.sendTransaction(tx, conn);
       setTxSig(sig);
       startPolling(paymentInfo.id, sig);
     } catch (e: any) {
