@@ -49,7 +49,7 @@ export default function AdminPaymentsPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-white">{p.amountUsd ? `$${p.amountUsd}` : p.amountSats ? `${p.amountSats} sats` : p.amount ?? "—"}</span>
+                        <span className="font-bold text-white">{p.amountUSD ? `$${Number(p.amountUSD).toFixed(2)}` : "—"}</span>
                         <Badge variant={p.chain === "BTC" ? "btc" : "sol"} className="text-xs">{p.chain}</Badge>
                         <Badge variant={p.status === "CONFIRMED" ? "default" : p.status === "PENDING" ? "secondary" : "outline"} className="text-xs">
                           {p.status}

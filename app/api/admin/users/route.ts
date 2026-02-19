@@ -48,10 +48,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
   if (action === "set_plan" && plan) {
+    // SubscriptionPlan enum: FREE | PRO | ELITE
+    const planVal = plan as "FREE" | "PRO" | "ELITE";
     await prisma.subscription.upsert({
       where: { userId },
-      create: { userId, plan, status: "ACTIVE" },
-      update: { plan },
+      create: { userId, plan: planVal, status: "active" },
+      update: { plan: planVal },
     });
     return NextResponse.json({ ok: true });
   }

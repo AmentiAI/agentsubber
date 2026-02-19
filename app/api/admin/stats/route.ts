@@ -13,14 +13,21 @@ export async function GET() {
     prisma.allowlistCampaign.count(),
     prisma.presale.count(),
     prisma.paymentRecord.count(),
-    (prisma as any).chatMessage.count(),
-    (prisma as any).post?.count?.() ?? 0,
+    prisma.chatMessage.count(),
+    prisma.post.count(),
   ]);
 
   const recentUsers = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     take: 5,
-    select: { id: true, name: true, xHandle: true, image: true, createdAt: true, subscription: { select: { plan: true } } },
+    select: {
+      id: true,
+      name: true,
+      xHandle: true,
+      image: true,
+      createdAt: true,
+      subscription: { select: { plan: true } },
+    },
   });
 
   const planBreakdown = await prisma.subscription.groupBy({
@@ -28,5 +35,16 @@ export async function GET() {
     _count: { plan: true },
   });
 
-  return NextResponse.json({ users, communities, giveaways, allowlists, presales, payments, chatMessages, posts, recentUsers, planBreakdown });
+  return NextResponse.json({
+    users,
+    communities,
+    giveaways,
+    allowlists,
+    presales,
+    payments,
+    chatMessages,
+    posts,
+    recentUsers,
+    planBreakdown,
+  });
 }

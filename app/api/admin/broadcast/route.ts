@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
   await prisma.notification.createMany({
     data: targets.map((userId) => ({
       userId,
+      title: "Platform Announcement",
       type,
       message,
       read: false,

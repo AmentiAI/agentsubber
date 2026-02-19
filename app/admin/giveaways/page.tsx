@@ -51,25 +51,25 @@ export default function AdminGiveawaysPage() {
       ) : (
         <div className="space-y-3">
           {giveaways.map((g) => {
-            const ended = new Date(g.endsAt) < new Date();
+            const ended = new Date(g.endAt) < new Date();
             return (
               <Card key={g.id}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-white text-lg">{g.name}</span>
+                        <span className="font-bold text-white text-lg">{g.title}</span>
                         <Badge variant={g.status === "ACTIVE" ? "default" : "secondary"} className="text-xs">{g.status}</Badge>
                         {ended && <Badge variant="outline" className="text-xs text-orange-400 border-orange-500/30">Ended</Badge>}
                       </div>
                       <div className="text-xs text-[rgb(110,110,130)] flex gap-3 flex-wrap">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{g._count?.entries ?? 0} entries</span>
                         <span>·</span>
-                        <span className="flex items-center gap-1"><Trophy className="w-3 h-3" />{g.winnersCount} winners</span>
+                        <span className="flex items-center gap-1"><Trophy className="w-3 h-3" />{g.totalWinners} winners</span>
                         <span>·</span>
                         <span>in {g.community?.name ?? "unknown"}</span>
                         <span>·</span>
-                        <span>{ended ? "ended" : "ends"} {formatDistanceToNow(new Date(g.endsAt), { addSuffix: true })}</span>
+                        <span>{ended ? "ends" : "ends"} {formatDistanceToNow(new Date(g.endAt), { addSuffix: true })}</span>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
