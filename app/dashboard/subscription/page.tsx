@@ -153,7 +153,7 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
   const { connection } = useConnection();
 
   const [chain, setChain] = useState<"BTC" | "SOL" | null>(null);
-  const [paymentInfo, setPaymentInfo] = useState<{ id: string; address: string; lamports?: number; sats?: number; displayAmount: string } | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<{ id: string; address: string; lamports?: number; sats?: number; displayAmount: string; priceUsed?: string } | null>(null);
   const [status, setStatus] = useState<"idle" | "creating" | "sending" | "polling" | "confirmed" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [txSig, setTxSig] = useState("");
@@ -181,6 +181,7 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
         lamports: data.lamports,
         sats: data.amountSats,
         displayAmount: data.amount,
+        priceUsed: data.priceUsed,
       });
       setStatus("idle");
     } catch (e: any) {
@@ -375,7 +376,8 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
               <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
                 <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
                 <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} SOL</div>
-                <div className="text-xs text-[rgb(100,100,120)]">to {paymentInfo.address.slice(0, 8)}…{paymentInfo.address.slice(-6)}</div>
+                <div className="text-xs text-[rgb(100,100,120)]">≈ ${planLabel.includes("Pro") ? "9.99" : "24.99"} USD · {paymentInfo.priceUsed}</div>
+                <div className="text-xs text-[rgb(80,80,100)] mt-1">to {paymentInfo.address.slice(0, 8)}…{paymentInfo.address.slice(-6)}</div>
               </div>
 
               {solWallet.connected ? (
@@ -402,7 +404,8 @@ function CryptoPayPanel({ plan, onClose }: { plan: string; onClose: () => void }
               <div className="bg-[rgb(18,18,26)] rounded-xl p-5 border border-[rgb(35,35,50)] text-center">
                 <div className="text-xs text-[rgb(130,130,150)] mb-1">Amount</div>
                 <div className="text-3xl font-black text-white mb-0.5">{paymentInfo.displayAmount} BTC</div>
-                <div className="text-xs text-[rgb(100,100,120)]">{paymentInfo.sats?.toLocaleString()} sats · to {paymentInfo.address.slice(0, 10)}…{paymentInfo.address.slice(-6)}</div>
+                <div className="text-xs text-[rgb(100,100,120)]">{paymentInfo.sats?.toLocaleString()} sats · ≈ ${planLabel.includes("Pro") ? "9.99" : "24.99"} USD · {paymentInfo.priceUsed}</div>
+                <div className="text-xs text-[rgb(80,80,100)] mt-1">to {paymentInfo.address.slice(0, 10)}…{paymentInfo.address.slice(-6)}</div>
               </div>
 
               <Button variant="gradient" className="w-full h-12 text-base gap-2" onClick={payBtc}>
