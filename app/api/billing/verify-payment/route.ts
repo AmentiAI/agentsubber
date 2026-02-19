@@ -79,13 +79,17 @@ export async function POST(req: Request) {
   const txAlreadyUsed = await prisma.paymentRecord.findFirst({ where: { txHash, status: "CONFIRMED" } });
   if (txAlreadyUsed) return NextResponse.json({ error: "This transaction has already been used" }, { status: 400 });
 
-  const expectedRaw = payment.expectedAmountRaw ? Number(payment.expectedAmountRaw) : 0;
+  // expectedAmountRaw is always set at payment creation from live prices — never guess
+  if (!payment.expectedAmountRaw) {
+    return NextResponse.json({ error: "Payment record missing expected amount — contact support." }, { status: 500 });
+  }
+  const expectedRaw = Number(payment.expectedAmountRaw);
   let result: { valid: boolean; confirmed: boolean; error?: string };
 
   if (payment.chain === "BTC") {
-    result = await verifyBTCTransaction(txHash, expectedRaw || Math.round((payment.amountUSD / 97000) * 1e8));
+    result = await verifyBTCTransaction(txHash, expectedRaw);
   } else if (payment.chain === "SOL") {
-    result = await verifySOLTransaction(txHash, expectedRaw || Math.round((payment.amountUSD / 180) * 1e9));
+    result = await verifySOLTransaction(txHash, expectedRaw);
   } else {
     return NextResponse.json({ error: "Unknown chain" }, { status: 400 });
   }
