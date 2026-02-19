@@ -12,11 +12,13 @@ const ALLOWED_METHODS = new Set([
   "getSignatureStatuses",
 ]);
 
+// SOLANA_RPC_URL is set in Vercel env (Helius key). Fallbacks used if missing.
+const PRIMARY = process.env.SOLANA_RPC_URL;
 const RPCS = [
+  ...(PRIMARY ? [PRIMARY] : []),
   "https://solana.publicnode.com",
   "https://api.mainnet-beta.solana.com",
   "https://rpc.ankr.com/solana",
-  "https://1rpc.io/sol",
 ];
 
 export async function POST(req: NextRequest) {
