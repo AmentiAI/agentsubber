@@ -100,7 +100,7 @@ model User {
   wallets          Wallet[]
   agent            OpenClawAgent?
   subscription     Subscription?
-  ownedCommunities Community[]          @relation("CommunityOwner")
+  ownedCommunities Community[]         @relation("CommunityOwner")
   giveawayEntries  GiveawayEntry[]
   allowlistEntries AllowlistEntry[]
   presaleOrders    PresaleOrder[]
@@ -154,14 +154,14 @@ model VerificationToken {
 // ─────────────────────────────────────────────
 
 model Wallet {
-  id        String   @id @default(cuid())
-  userId    String
-  address   String
-  chain     Chain
-  label     String?
-  verified  Boolean  @default(false)
-  isPrimary Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  address       String
+  chain         Chain
+  label         String?
+  verified      Boolean  @default(false)
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   allowlistEntries AllowlistEntry[]
@@ -226,16 +226,16 @@ model Subscription {
 // ─────────────────────────────────────────────
 
 model Community {
-  id               String   @id @default(cuid())
-  ownerUserId      String
-  name             String
-  slug             String   @unique
-  description      String?  @db.Text
-  logoUrl          String?
-  bannerUrl        String?
-  logoPosition     String?  @default("50% 50%")
-  bannerPosition   String?  @default("50% 50%")
-  chain            Chain    @default(SOL)
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  name          String
+  slug          String   @unique
+  description   String?  @db.Text
+  logoUrl        String?
+  bannerUrl      String?
+  logoPosition   String?  @default("50% 50%")
+  bannerPosition String?  @default("50% 50%")
+  chain         Chain    @default(SOL)
   featured         Boolean  @default(false)
   twitterHandle    String?
   discordInvite    String?
@@ -245,17 +245,17 @@ model Community {
   youtubeUrl       String?
   magicEdenUrl     String?
   tensorUrl        String?
-  tags             String? // comma-separated e.g. "NFT,Gaming,PFP"
-  announcementText String?  @db.Text
-  mintDate         String? // stored as string e.g. "Q2 2025" or "2025-06-01"
-  mintPrice        String? // e.g. "0.05 SOL" or "Free"
+  tags             String?    // comma-separated e.g. "NFT,Gaming,PFP"
+  announcementText String?    @db.Text
+  mintDate         String?    // stored as string e.g. "Q2 2025" or "2025-06-01"
+  mintPrice        String?    // e.g. "0.05 SOL" or "Free"
   totalSupply      Int?
-  accentColor      String? // hex e.g. "#8B5CF6"
+  accentColor      String?    // hex e.g. "#8B5CF6"
   memberCount      Int      @default(0)
-  verified         Boolean  @default(false)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  verified      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   owner              User                @relation("CommunityOwner", fields: [ownerUserId], references: [id])
   memberAccess       MemberAccess?
@@ -269,17 +269,16 @@ model Community {
   collabsReceived    CollabOffer[]       @relation("CollabTo")
   posts              Post[]              @relation("CommunityPosts")
   followers          CommunityFollow[]
-  customRoles        CommunityRole[]
 }
 
 model CommunityFollow {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   communityId String
   userId      String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([communityId, userId])
 }
@@ -343,86 +342,44 @@ model AllowlistEntry {
 // ─────────────────────────────────────────────
 
 model Giveaway {
-  id           String         @id @default(cuid())
-  communityId  String
-  title        String
-  description  String?        @db.Text
-  prize        String
-  totalWinners Int            @default(1)
-  status       GiveawayStatus @default(UPCOMING)
-  startAt      DateTime
-  endAt        DateTime
-
-  // Chain selection
-  chain Chain @default(SOL)
-
-  // Twitter/X Requirements (ENHANCED)
-  requiresXFollow  Boolean @default(false)
+  id               String         @id @default(cuid())
+  communityId      String
+  title            String
+  description      String?        @db.Text
+  prize            String
+  totalWinners     Int            @default(1)
+  status           GiveawayStatus @default(UPCOMING)
+  startAt          DateTime
+  endAt            DateTime
+  requiresXFollow  Boolean        @default(false)
   xAccountToFollow String?
-  requiresXRetweet Boolean @default(false)
-  xTweetToRetweet  String? // Tweet ID or URL
-  requiresXLike    Boolean @default(false)
-  xTweetToLike     String? // Tweet ID or URL
-  requiresXTag     Boolean @default(false)
-  xTagsRequired    String? // Comma-separated tags
-
-  // Discord Requirements (ENHANCED)
-  requiresDiscord     Boolean @default(false)
-  discordGuildId      String?
-  requiredDiscordRole String? // Role ID required to enter
-
-  // Telegram Requirements (NEW)
-  requiresTelegram Boolean @default(false)
-  telegramGroup    String? // Group/channel invite link or @username
-
-  // Token Gating (existing)
+  requiresDiscord  Boolean        @default(false)
   tokenGateAddress String?
   tokenGateAmount  Float?
+  isAgentEligible  Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  // Private/Team Features (NEW)
-  isPrivate      Boolean @default(false)
-  hideEntryCount Boolean @default(false)
-  teamSpots      Int? // Reserved spots for team
-
-  // Offer Features (NEW)
-  isOffer            Boolean @default(false)
-  offerToCommunityId String?
-  offerMintInfo      String? @db.Text
-
-  // Agent Eligibility
-  isAgentEligible Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  community         Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  entries           GiveawayEntry[]
-  winners           GiveawayWinner[]
-  roleMultipliers   RoleMultiplier[]
-  taskVerifications TaskVerification[]
+  community Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  entries   GiveawayEntry[]
+  winners   GiveawayWinner[]
 }
 
 model GiveawayEntry {
-  id               String  @id @default(cuid())
-  giveawayId       String
-  userId           String
-  walletId         String?
-  walletAddress    String?
-  xUsername        String?
-  discordUsername  String?
-  telegramUsername String?
-  enteredByAgent   Boolean @default(false)
+  id              String   @id @default(cuid())
+  giveawayId      String
+  userId          String
+  walletId        String?
+  walletAddress   String?
+  xUsername       String?
+  discordUsername String?
+  enteredByAgent  Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  // Entry multiplier (calculated from role multipliers)
-  entryMultiplier Int @default(1)
-
-  createdAt DateTime @default(now())
-
-  giveaway          Giveaway           @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
-  user              User               @relation(fields: [userId], references: [id])
-  wallet            Wallet?            @relation(fields: [walletId], references: [id])
-  winner            GiveawayWinner?
-  taskVerifications TaskVerification[]
+  giveaway Giveaway        @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
+  wallet   Wallet?         @relation(fields: [walletId], references: [id])
+  winner   GiveawayWinner?
 
   @@unique([giveawayId, userId])
 }
@@ -451,27 +408,11 @@ model CollabOffer {
   message         String?      @db.Text
   campaignId      String?
   expiresAt       DateTime?
-
-  // Offer Details (ENHANCED)
-  projectName     String?
-  logoDescription String?   @db.Text
-  chain           Chain     @default(SOL)
-  numSpots        Int?
-  mintInfo        String?   @db.Text
-  startAt         DateTime?
-  endAt           DateTime?
-  requirements    Json? // Store complex requirements
-
-  // Visibility (NEW)
-  isPrivate   Boolean @default(false)
-  hideEntries Boolean @default(false)
-  teamSpots   Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   fromCommunity Community @relation("CollabFrom", fields: [fromCommunityId], references: [id], onDelete: Cascade)
-  toCommunity   Community @relation("CollabTo", fields: [toCommunityId], references: [id], onDelete: Cascade)
+  toCommunity   Community @relation("CollabTo",   fields: [toCommunityId],   references: [id], onDelete: Cascade)
 }
 
 // ─────────────────────────────────────────────
@@ -612,12 +553,12 @@ model Notification {
 model PaymentRecord {
   id                String    @id @default(cuid())
   userId            String
-  plan              String // "PRO" | "ELITE"
-  chain             String // "BTC" | "SOL"
-  txHash            String? // transaction hash once confirmed
+  plan              String    // "PRO" | "ELITE"
+  chain             String    // "BTC" | "SOL"
+  txHash            String?   // transaction hash once confirmed
   amountUSD         Float
-  expectedAmountRaw String? // satoshis (BTC) or lamports (SOL) as string integer
-  txHashSubmitted   String? // tx hash user submitted for verification
+  expectedAmountRaw String?   // satoshis (BTC) or lamports (SOL) as string integer
+  txHashSubmitted   String?   // tx hash user submitted for verification
   status            String    @default("PENDING") // PENDING | CONFIRMED | FAILED
   memo              String    @unique // unique payment memo/reference
   createdAt         DateTime  @default(now())
@@ -634,8 +575,8 @@ model AgentChallenge {
   id         String   @id @default(cuid())
   agentId    String
   token      String   @unique @default(cuid())
-  questionId Int // index into the question pool
-  answer     String // correct answer letter "A"/"B"/"C"/"D"
+  questionId Int      // index into the question pool
+  answer     String   // correct answer letter "A"/"B"/"C"/"D"
   solved     Boolean  @default(false)
   used       Boolean  @default(false)
   expiresAt  DateTime
@@ -649,16 +590,16 @@ model AgentChallenge {
 // ─────────────────────────────────────────────
 
 model Post {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   userId      String
   communityId String?
-  content     String   @db.Text
-  imageUrl    String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  content     String       @db.Text
+  imageUrl    String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  community Community?    @relation("CommunityPosts", fields: [communityId], references: [id], onDelete: SetNull)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community?   @relation("CommunityPosts", fields: [communityId], references: [id], onDelete: SetNull)
   comments  PostComment[]
   likes     PostLike[]
 }
@@ -697,63 +638,4 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// ROLE MULTIPLIERS (NEW)
-// ─────────────────────────────────────────────
-
-model RoleMultiplier {
-  id          String   @id @default(cuid())
-  giveawayId  String
-  communityId String // Community that owns the role
-  roleId      String // Discord role ID
-  roleName    String // Human-readable name
-  multiplier  Int      @default(1) // e.g., 5 = 5x entries
-  createdAt   DateTime @default(now())
-
-  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
-
-  @@unique([giveawayId, roleId])
-}
-
-// ─────────────────────────────────────────────
-// COMMUNITY ROLES (NEW)
-// ─────────────────────────────────────────────
-
-model CommunityRole {
-  id            String   @id @default(cuid())
-  communityId   String
-  name          String // "VIP", "OG", "Whitelist", etc.
-  description   String?
-  discordRoleId String? // Linked Discord role
-  color         String? // Hex color for UI
-  priority      Int      @default(0) // For sorting
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-
-  @@unique([communityId, name])
-}
-
-// ─────────────────────────────────────────────
-// TASK VERIFICATION (NEW)
-// ─────────────────────────────────────────────
-
-model TaskVerification {
-  id               String    @id @default(cuid())
-  giveawayId       String
-  entryId          String
-  userId           String
-  taskType         String // "X_FOLLOW", "X_RT", "X_LIKE", "DISCORD_JOIN", "DISCORD_ROLE", "TELEGRAM_JOIN"
-  verified         Boolean   @default(false)
-  verifiedAt       DateTime?
-  verificationData Json? // Store proof/metadata
-  createdAt        DateTime  @default(now())
-
-  giveaway Giveaway      @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
-  entry    GiveawayEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-
-  @@unique([entryId, taskType])
 }
